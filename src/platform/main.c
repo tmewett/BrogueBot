@@ -48,6 +48,7 @@ static void printCommandlineHelp() {
     "-s seed                    start a new game with the specified numerical seed\n"
     "-o filename[.broguesave]   open a save file (extension optional)\n"
     "-v recording[.broguerec]   view a recording (extension optional)\n"
+    "-b <script file>           use bot script to play game\n"
 #ifdef BROGUE_TCOD
     "--size N                   starts the game at font size N (1 to 13)\n"
     "--noteye-hack              ignore SDL-specific application state checks\n"
@@ -83,6 +84,13 @@ int main(int argc, char *argv[])
 
     int i;
     for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-b") == 0) {
+            if (i + 1 < argc) {
+                botScript = argv[++i];
+                continue;
+            }
+        }
+
         if (strcmp(argv[i], "--scores") == 0) {
             // just dump the scores and quit!
             dumpScores();

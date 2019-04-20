@@ -218,7 +218,9 @@ void initializeRogue(unsigned long seed) {
 #ifdef GENERATE_FONT_FILES
     generateFontFiles();
 #endif
-    
+
+    resetBot(botScript);
+
     playingback = rogue.playbackMode; // the only three animals that need to go on the ark
     playbackPaused = rogue.playbackPaused;
     playbackFF = rogue.playbackFastForward;

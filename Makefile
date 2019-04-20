@@ -20,6 +20,7 @@ endif
 	$(CC) $(CFLAGS) -g -o $@ -c $< 
 
 BROGUEFILES=src/brogue/Architect.o \
+	src/brogue/Bot.o \
 	src/brogue/Combat.o \
 	src/brogue/Dijkstra.o \
 	src/brogue/Globals.o \
@@ -48,13 +49,14 @@ TCOD_LIB = -L. -L${LIBTCODDIR} ${SDL_FLAGS} -ltcod -Wl,-rpath,.
 CURSES_DEF = -DBROGUE_CURSES
 CURSES_LIB = -lncurses -lm
 
+LIBRARIES += -llua
 
 tcod : DEPENDENCIES += ${TCOD_DEP}
 tcod : DEFINES += ${TCOD_DEF}
 tcod : LIBRARIES += ${TCOD_LIB}
 
-curses : DEFINES = ${CURSES_DEF}
-curses : LIBRARIES = ${CURSES_LIB}
+curses : DEFINES += ${CURSES_DEF}
+curses : LIBRARIES += ${CURSES_LIB}
 
 both : DEPENDENCIES += ${TCOD_DEP}
 both : DEFINES += ${TCOD_DEF} ${CURSES_DEF}
