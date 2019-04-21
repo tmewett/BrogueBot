@@ -22,3 +22,8 @@ void resetBot(char *filename) {
 boolean botShouldAct() {
     return inGame && !rogue.playbackMode;
 }
+
+void nextBotEvent(rogueEvent *returnEvent) {
+    returnEvent->eventType = KEYSTROKE;
+    returnEvent->param1 = UP_KEY;
+}

@@ -146,8 +146,12 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
             shuffleTerrainColors(3, true);
             commitDraws();
         }   
-        
-        
+
+        if (botShouldAct()) {
+            nextBotEvent(returnEvent);
+            return;
+        }
+
         key = Term.getkey();
         if (key == TERM_MOUSE) {
             if (Term.mouse.x > 0 && Term.mouse.y > 0 && Term.mouse.x < COLS && Term.mouse.y < ROWS) {
