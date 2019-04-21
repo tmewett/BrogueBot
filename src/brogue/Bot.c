@@ -10,18 +10,18 @@ lua_State *L;
 char *botScript = "";
 boolean inGame = false;
 
-struct {
+static struct {
     rogueEvent events[QUEUE_LEN];
     int start;
     int end;
 } eventQueue;
 
-void pushEvent(rogueEvent ev) {
+static void pushEvent(rogueEvent ev) {
     eventQueue.events[eventQueue.end++] = ev;
     eventQueue.end %= QUEUE_LEN;
 }
 
-void pushKey(signed long key) {
+static void pushKey(signed long key) {
     pushEvent((rogueEvent){KEYSTROKE, key, 0, false, false});
 }
 
@@ -54,7 +54,7 @@ void nextBotEvent(rogueEvent *returnEvent) {
     }
 }
 
-int l_stepto(lua_State *L) {
+static int l_stepto(lua_State *L) {
     lua_Integer dir = luaL_checkinteger(L, 1);
     switch ((enum directions)dir) {
         case UP        : pushKey(UP_KEY); break;
@@ -72,7 +72,7 @@ int l_stepto(lua_State *L) {
     return 0;
 }
 
-luaL_Reg reg[] = {
+static luaL_Reg reg[] = {
     {"stepto", l_stepto}
 };
 
