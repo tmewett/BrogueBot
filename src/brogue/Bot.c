@@ -3,9 +3,26 @@
 #include "Rogue.h"
 #include "IncludeGlobals.h"
 
+#define QUEUE_LEN 16
+
 lua_State *L;
 char *botScript = "";
 boolean inGame = false;
+
+struct {
+    rogueEvent events[QUEUE_LEN];
+    int start;
+    int end;
+} eventQueue;
+
+void pushEvent(rogueEvent ev) {
+    eventQueue.events[eventQueue.end++] = ev;
+    eventQueue.end %= QUEUE_LEN;
+}
+
+void pushKey(signed long key) {
+    pushEvent((rogueEvent){KEYSTROKE, key, 0, false, false});
+}
 
 static void die(char *s) {
     printf(s);
@@ -24,6 +41,10 @@ boolean botShouldAct() {
 }
 
 void nextBotEvent(rogueEvent *returnEvent) {
-    returnEvent->eventType = KEYSTROKE;
-    returnEvent->param1 = UP_KEY;
+    pushKey(UP_KEY);
+
+    if (eventQueue.start != eventQueue.end) {
+        *returnEvent = eventQueue.events[eventQueue.start++];
+        eventQueue.start %= QUEUE_LEN;
+    }
 }
