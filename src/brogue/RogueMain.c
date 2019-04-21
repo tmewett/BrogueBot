@@ -220,6 +220,7 @@ void initializeRogue(unsigned long seed) {
 #endif
 
     resetBot(botScript);
+    inGame = true;
 
     playingback = rogue.playbackMode; // the only three animals that need to go on the ark
     playbackPaused = rogue.playbackPaused;
@@ -1058,7 +1059,7 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
     }
     
     rogue.autoPlayingLevel = false;
-    
+    inGame = false;
     flushBufferToFile();
     
     if (rogue.quit) {
@@ -1191,6 +1192,7 @@ void victory(boolean superVictory) {
     boolean qualified, isPlayback;
     cellDisplayBuffer dbuf[COLS][ROWS];
     
+    inGame = false;
     flushBufferToFile();
     
     deleteMessages();
