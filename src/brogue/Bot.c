@@ -54,6 +54,11 @@ void nextBotEvent(rogueEvent *returnEvent) {
     }
 }
 
+static int l_message(lua_State *L) {
+    message(luaL_checkstring(L, 1), false);
+    return 0;
+}
+
 static int l_stepto(lua_State *L) {
     lua_Integer dir = luaL_checkinteger(L, 1);
     switch ((enum directions)dir) {
@@ -74,6 +79,7 @@ static int l_stepto(lua_State *L) {
 
 static luaL_Reg reg[] = {
     {"stepto", l_stepto},
+    {"message", l_message},
     {NULL, NULL},
 };
 
