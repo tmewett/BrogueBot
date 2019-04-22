@@ -54,6 +54,43 @@ void nextBotEvent(rogueEvent *returnEvent) {
     }
 }
 
+// push an item table onto the Lua stack
+static void pushItem(item *it) {
+    lua_newtable(L);
+    itemCategory c = it->category;
+
+    lua_pushinteger(L, c);
+    lua_setfield(L, -2, "category");
+    lua_pushinteger(L, it->kind);
+    lua_setfield(L, -2, "kind");
+    lua_pushinteger(L, it->flags);
+    lua_setfield(L, -2, "flags");
+    lua_pushinteger(L, it->quantity);
+    lua_setfield(L, -2, "quantity");
+    lua_pushinteger(L, it->inventoryLetter);
+    lua_setfield(L, -2, "letter");
+    lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
+    lua_setfield(L, -2, "cell");
+
+    if (c==WEAPON || c==ARMOR) {
+        lua_pushinteger(L, it->strengthRequired);
+        lua_setfield(L, -2, "strength");
+        lua_pushinteger(L, it->enchant2);
+        lua_setfield(L, -2, "runic");
+    }
+    if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
+        lua_pushinteger(L, it->charges);
+        lua_setfield(L, -2, "charges");
+        lua_pushinteger(L, it->enchant1);
+        lua_setfield(L, -2, "enchant");
+    }
+    if (c==ARMOR) {
+        lua_pushinteger(L, it->armor);
+        lua_setfield(L, -2, "armor");
+    }
+    // TODO damage
+}
+
 static int l_message(lua_State *L) {
     message(luaL_checkstring(L, 1), false);
     return 0;
