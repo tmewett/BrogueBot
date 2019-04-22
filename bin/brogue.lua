@@ -9,7 +9,7 @@ end
 function pushevents()
     world = getworld()
     for i=1, DCOLS*DROWS do
-        if world.flags[i] & cellflags.HAS_PLAYER > 0 then
+        if world.flags[i] & HAS_PLAYER > 0 then
             px, py = coords(i)
             break
         end
