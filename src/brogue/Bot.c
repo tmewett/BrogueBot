@@ -77,9 +77,42 @@ static int l_stepto(lua_State *L) {
     return 0;
 }
 
+static int l_getworld(lua_State *L) {
+    lua_newtable(L);
+
+    // put on stack, bottom-to-top:
+    // dungeon, liquid, gas, surface, flags
+    for (int s=0; s < 5; ++s)
+        lua_createtable(L, DCOLS*DROWS, 0);
+
+    // iterate all pcells, updating each subtable on the stack
+    pcell *cell;
+    int j;
+    for (int i=1; i <= DCOLS*DROWS; ++i) {
+        j = 2;
+        cell = &pmap[0][i-1];
+
+        for (int l=0; l < 4; ++l) {
+            lua_pushinteger(L, cell->layers[l]);
+            lua_seti(L, j++, i);
+        }
+
+        lua_pushinteger(L, cell->flags);
+        lua_seti(L, j++, i);
+    }
+
+    lua_setfield(L, 1, "flags");
+    lua_setfield(L, 1, "surface");
+    lua_setfield(L, 1, "gas");
+    lua_setfield(L, 1, "liquid");
+    lua_setfield(L, 1, "dungeon");
+    return 1;
+}
+
 static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"message", l_message},
+    {"getworld", l_getworld},
     {NULL, NULL},
 };
 
