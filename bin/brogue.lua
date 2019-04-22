@@ -1,5 +1,4 @@
-DCOLS = 79
-DROWS = 29
+require 'definitions'
 
 function coords(cell)
     cell = cell - 1
@@ -10,7 +9,7 @@ end
 function pushevents()
     world = getworld()
     for i=1, DCOLS*DROWS do
-        if world.flags[i] & 4 > 0 then
+        if world.flags[i] & cellflags.HAS_PLAYER > 0 then
             px, py = coords(i)
             break
         end
