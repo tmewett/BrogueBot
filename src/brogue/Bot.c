@@ -96,6 +96,15 @@ static int l_message(lua_State *L) {
     return 0;
 }
 
+static int l_presskeys(lua_State *L) {
+    size_t len;
+    const char *keys = luaL_checklstring(L, 1, &len);
+    for (int i=0; i < len; i++) {
+        pushKey(keys[i]);
+    }
+    return 0;
+}
+
 static int l_stepto(lua_State *L) {
     lua_Integer dir = luaL_checkinteger(L, 1);
     switch ((enum directions)dir) {
@@ -159,8 +168,9 @@ static int l_getpack(lua_State *L) {
 }
 
 static luaL_Reg reg[] = {
-    {"stepto", l_stepto},
     {"message", l_message},
+    {"presskeys", l_presskeys},
+    {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
     {NULL, NULL},
