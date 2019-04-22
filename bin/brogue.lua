@@ -6,14 +6,27 @@ function coords(cell)
     return cell // DROWS, cell % DROWS
 end
 
-function pushevents()
-    world = getworld()
+-- sample, override to customize
+function act(world, rogue)
+
     for i=1, DCOLS*DROWS do
         if world.flags[i] & HAS_PLAYER > 0 then
-            px, py = coords(i)
+            local px, py = coords(i)
             break
         end
     end
-    message(string.format("I am at (%d, %d)", px, py))
+
+    for let, item in pairs(rogue.pack) do
+        -- drop stacked items as a test
+        if item.quantity > 1 then presskeys("d"..let) end
+    end
+
+    --message(string.format("I am at (%d, %d)", px, py))
     stepto(math.random(0, 7))
+end
+
+function pushevents()
+    local world, rogue = getworld(), {}
+    rogue.pack = getpack()
+    act(world, rogue)
 end
