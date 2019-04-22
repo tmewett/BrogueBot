@@ -55,9 +55,9 @@ void nextBotEvent(rogueEvent *returnEvent) {
 }
 
 // push an item table onto the Lua stack
-static void pushItem(item *it) {
+static void pushItem(lua_State *L, item *it) {
     lua_newtable(L);
-    itemCategory c = it->category;
+    enum itemCategory c = it->category;
 
     lua_pushinteger(L, c);
     lua_setfield(L, -2, "category");
@@ -146,10 +146,23 @@ static int l_getworld(lua_State *L) {
     return 1;
 }
 
+static int l_getpack(lua_State *L) {
+    lua_newtable(L);
+
+    char let[2] = " ";
+    for (item *it = packItems->nextItem; it != NULL; it = it->nextItem) {
+        pushItem(L, it);
+        let[0] = it->inventoryLetter;
+        lua_setfield(L, -2, let);
+    }
+    return 1;
+}
+
 static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"message", l_message},
     {"getworld", l_getworld},
+    {"getpack", l_getpack},
     {NULL, NULL},
 };
 
