@@ -6,7 +6,7 @@
 
 #define QUEUE_LEN 16
 
-lua_State *L;
+static lua_State *L = NULL;
 char *botScript = "";
 boolean inGame = false;
 
@@ -41,7 +41,7 @@ void nextBotEvent(rogueEvent *returnEvent) {
         *returnEvent = eventQueue.events[eventQueue.start++];
         eventQueue.start %= QUEUE_LEN;
     } else {
-        lua_getglobal(L, "act");
+        lua_getglobal(L, "pushevents");
         if (lua_pcall(L, 0, 0, 0)) {
             // there's an error object on stack; print it to message log
             inGame = false;
@@ -73,7 +73,8 @@ static int l_stepto(lua_State *L) {
 }
 
 static luaL_Reg reg[] = {
-    {"stepto", l_stepto}
+    {"stepto", l_stepto},
+    {NULL, NULL},
 };
 
 void resetBot(char *filename) {
