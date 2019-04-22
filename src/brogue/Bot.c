@@ -106,7 +106,7 @@ static int l_presskeys(lua_State *L) {
 }
 
 static int l_stepto(lua_State *L) {
-    lua_Integer dir = luaL_checkinteger(L, 1);
+    lua_Integer dir = luaL_checkinteger(L, 1) - 1;
     switch ((enum directions)dir) {
         case UP        : pushKey(UP_KEY); break;
         case DOWN      : pushKey(DOWN_KEY); break;

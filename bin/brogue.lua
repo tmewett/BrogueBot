@@ -22,7 +22,7 @@ function act(world, rogue)
     end
 
     --message(string.format("I am at (%d, %d)", px, py))
-    stepto(math.random(0, 7))
+    stepto(math.random(1, 8))
 end
 
 function pushevents()

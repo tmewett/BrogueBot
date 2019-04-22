@@ -3,6 +3,16 @@ function Fl(n) return 1 << n end
 DCOLS = 79
 DROWS = 29
 
+-- directions
+UP              = 1
+DOWN            = 2
+LEFT            = 3
+RIGHT           = 4
+UPLEFT          = 5
+DOWNLEFT        = 6
+UPRIGHT         = 7
+DOWNRIGHT       = 8
+
 -- cell flags
 DISCOVERED                  = Fl(0)
 VISIBLE                     = Fl(1)    -- cell has sufficient light and is in field of view, ready to draw.
