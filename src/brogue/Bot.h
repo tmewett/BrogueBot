@@ -1,6 +1,5 @@
 extern char *botScript;
-extern boolean inGame;
+extern boolean botControl;
 
 void resetBot(char *filename);
-boolean botShouldAct();
 void nextBotEvent(rogueEvent *returnEvent);

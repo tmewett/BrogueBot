@@ -147,7 +147,7 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
             commitDraws();
         }   
 
-        if (botShouldAct()) {
+        if (botControl) {
             nextBotEvent(returnEvent);
             return;
         }

@@ -754,7 +754,12 @@ void mainBrogueJunction() {
                 rogue.nextGame = NG_NOTHING;
                 initializeRogue(rogue.nextGameSeed);
                 startLevel(rogue.depthLevel, 1); // descending into level 1
-                
+
+                if (strlen(botScript) > 0) {
+                    botControl = true;
+                    resetBot(botScript);
+                }
+
                 mainInputLoop();
                 freeEverything();
                 break;
