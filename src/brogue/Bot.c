@@ -58,6 +58,7 @@ void nextBotEvent(rogueEvent *returnEvent) {
 static void pushItem(lua_State *L, item *it) {
     lua_newtable(L);
     enum itemCategory c = it->category;
+    char letter[2] = {it->inventoryLetter, 0};
 
     lua_pushinteger(L, c);
     lua_setfield(L, -2, "category");
@@ -67,7 +68,7 @@ static void pushItem(lua_State *L, item *it) {
     lua_setfield(L, -2, "flags");
     lua_pushinteger(L, it->quantity);
     lua_setfield(L, -2, "quantity");
-    lua_pushinteger(L, it->inventoryLetter);
+    lua_pushstring(L, letter);
     lua_setfield(L, -2, "letter");
     lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
     lua_setfield(L, -2, "cell");

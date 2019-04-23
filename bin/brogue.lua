@@ -6,6 +6,11 @@ function coords(cell)
     return cell // DROWS, cell % DROWS
 end
 
+function drop(item)
+    if not item.letter then error("cannot interact with an item not in the pack") end
+    presskeys("d"..item.letter)
+end
+
 -- sample, override to customize
 function act(world, rogue)
 
@@ -18,7 +23,7 @@ function act(world, rogue)
 
     for let, item in pairs(rogue.pack) do
         -- drop stacked items as a test
-        if item.quantity > 1 then presskeys("d"..let) end
+        if item.quantity > 1 then drop(item) end
     end
 
     --message(string.format("I am at (%d, %d)", px, py))
