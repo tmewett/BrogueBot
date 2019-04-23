@@ -101,6 +101,11 @@ static int l_presskeys(lua_State *L) {
     return 0;
 }
 
+static int l_tileflags(lua_State *L) {
+    lua_pushinteger(L, tileCatalog[luaL_checkinteger(L, 1)].flags);
+    return 1;
+}
+
 static int l_stepto(lua_State *L) {
     lua_Integer dir = luaL_checkinteger(L, 1) - 1;
     switch ((enum directions)dir) {
@@ -166,6 +171,7 @@ static int l_getpack(lua_State *L) {
 static luaL_Reg reg[] = {
     {"message", l_message},
     {"presskeys", l_presskeys},
+    {"tileflags", l_tileflags},
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
