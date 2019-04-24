@@ -12,7 +12,7 @@ function drop(item)
 end
 
 -- sample, override to customize
-function act(world, rogue)
+function act()
 
     for i=1, DCOLS*DROWS do
         if world.flags[i] & HAS_PLAYER > 0 then
@@ -31,7 +31,7 @@ function act(world, rogue)
 end
 
 function pushevents()
-    local world, rogue = getworld(), {}
+    world, rogue = getworld(), {}
     rogue.pack = getpack()
-    act(world, rogue)
+    act()
 end
