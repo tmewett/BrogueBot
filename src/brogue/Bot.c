@@ -168,6 +168,25 @@ static int l_getpack(lua_State *L) {
     return 1;
 }
 
+static int l_distmap(lua_State *L) {
+    lua_createtable(L, DCOLS*DROWS, 0);
+
+    short **dists = allocGrid();
+    lua_Integer cell = luaL_checkinteger(L, 1) - 1;
+    lua_Integer blockflags = luaL_checkinteger(L, 2);
+    calculateDistances(dists, cell/DROWS, cell%DROWS, blockflags, NULL, false, true);
+
+    short d;
+    for (int i=1; i <= DCOLS*DROWS; ++i) {
+        d = dists[0][i-1];
+        lua_pushinteger(L, d);
+        lua_seti(L, -2, i);
+    }
+
+    freeGrid(dists);
+    return 1;
+}
+
 static luaL_Reg reg[] = {
     {"message", l_message},
     {"presskeys", l_presskeys},
@@ -175,6 +194,7 @@ static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
+    {"distancemap", l_distmap},
     {NULL, NULL},
 };
 

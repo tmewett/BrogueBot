@@ -13,6 +13,8 @@ DOWNLEFT        = 6
 UPRIGHT         = 7
 DOWNRIGHT       = 8
 
+UNREACHABLE = 30000
+
 -- cell flags
 DISCOVERED                  = Fl(0)
 VISIBLE                     = Fl(1)    -- cell has sufficient light and is in field of view, ready to draw.
