@@ -1,4 +1,5 @@
-function Fl(n) return 1 << n end
+local function Fl(n) return 1 << n end
+local function nexti() i = i + 1; return i end
 
 DCOLS = 79
 DROWS = 29
@@ -92,3 +93,96 @@ T_CAN_BE_BRIDGED                = (T_AUTO_DESCENT)
 T_OBSTRUCTS_EVERYTHING          = (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION | T_OBSTRUCTS_ITEMS | T_OBSTRUCTS_GAS | T_OBSTRUCTS_SURFACE_EFFECTS | T_OBSTRUCTS_DIAGONAL_MOVEMENT)
 T_HARMFUL_TERRAIN               = (T_CAUSES_POISON | T_IS_FIRE | T_CAUSES_DAMAGE | T_CAUSES_PARALYSIS | T_CAUSES_CONFUSION | T_CAUSES_EXPLOSIVE_DAMAGE)
 T_RESPIRATION_IMMUNITIES        = (T_CAUSES_DAMAGE | T_CAUSES_CONFUSION | T_CAUSES_PARALYSIS | T_CAUSES_NAUSEA)
+
+-- monster behaviour flags
+MONST_INVISIBLE                 = Fl(0)    -- monster is invisible
+MONST_INANIMATE                 = Fl(1)    -- monster has abbreviated stat bar display and is immune to many things
+MONST_IMMOBILE                  = Fl(2)    -- monster won't move or perform melee attacks
+MONST_CARRY_ITEM_100            = Fl(3)    -- monster carries an item 100% of the time
+MONST_CARRY_ITEM_25             = Fl(4)    -- monster carries an item 25% of the time
+MONST_ALWAYS_HUNTING            = Fl(5)    -- monster is never asleep or in wandering mode
+MONST_FLEES_NEAR_DEATH          = Fl(6)    -- monster flees when under 25% health and re-engages when over 75%
+MONST_ATTACKABLE_THRU_WALLS     = Fl(7)    -- can be attacked when embedded in a wall
+MONST_DEFEND_DEGRADE_WEAPON     = Fl(8)    -- hitting the monster damages the weapon
+MONST_IMMUNE_TO_WEAPONS         = Fl(9)    -- weapons ineffective
+MONST_FLIES                     = Fl(10)   -- permanent levitation
+MONST_FLITS                     = Fl(11)   -- moves randomly a third of the time
+MONST_IMMUNE_TO_FIRE            = Fl(12)   -- won't burn, won't die in lava
+MONST_CAST_SPELLS_SLOWLY        = Fl(13)   -- takes twice the attack duration to cast a spell
+MONST_IMMUNE_TO_WEBS            = Fl(14)   -- monster passes freely through webs
+MONST_REFLECT_4                 = Fl(15)   -- monster reflects projectiles as though wearing +4 armor of reflection
+MONST_NEVER_SLEEPS              = Fl(16)   -- monster is always awake
+MONST_FIERY                     = Fl(17)   -- monster carries an aura of flame (but no automatic fire light)
+MONST_INVULNERABLE              = Fl(18)   -- monster is immune to absolutely everything
+MONST_IMMUNE_TO_WATER           = Fl(19)   -- monster moves at full speed in deep water and (if player) doesn't drop items
+MONST_RESTRICTED_TO_LIQUID      = Fl(20)   -- monster can move only on tiles that allow submersion
+MONST_SUBMERGES                 = Fl(21)   -- monster can submerge in appropriate terrain
+MONST_MAINTAINS_DISTANCE        = Fl(22)   -- monster tries to keep a distance of 3 tiles between it and player
+MONST_WILL_NOT_USE_STAIRS       = Fl(23)   -- monster won't chase the player between levels
+MONST_DIES_IF_NEGATED           = Fl(24)   -- monster will die if exposed to negation magic
+MONST_MALE                      = Fl(25)   -- monster is male (or 50% likely to be male if also has MONST_FEMALE)
+MONST_FEMALE                    = Fl(26)   -- monster is female (or 50% likely to be female if also has MONST_MALE)
+MONST_NOT_LISTED_IN_SIDEBAR     = Fl(27)   -- monster doesn't show up in the sidebar
+MONST_GETS_TURN_ON_ACTIVATION   = Fl(28)   -- monster never gets a turn, except when its machine is activated
+MONST_ALWAYS_USE_ABILITY        = Fl(29)   -- monster will never fail to use special ability if eligible (no random factor)
+MONST_NO_POLYMORPH              = Fl(30)   -- monster cannot result from a polymorph spell (liches, phoenixes and Warden of Yendor)
+
+NEGATABLE_TRAITS                = (MONST_INVISIBLE | MONST_DEFEND_DEGRADE_WEAPON | MONST_IMMUNE_TO_WEAPONS | MONST_FLIES
+                                   | MONST_FLITS | MONST_IMMUNE_TO_FIRE | MONST_REFLECT_4 | MONST_FIERY | MONST_MAINTAINS_DISTANCE)
+MONST_TURRET                    = (MONST_IMMUNE_TO_WEBS | MONST_NEVER_SLEEPS | MONST_IMMOBILE | MONST_INANIMATE |
+                                   MONST_ATTACKABLE_THRU_WALLS | MONST_WILL_NOT_USE_STAIRS)
+LEARNABLE_BEHAVIORS             = (MONST_INVISIBLE | MONST_FLIES | MONST_IMMUNE_TO_FIRE | MONST_REFLECT_4)
+MONST_NEVER_VORPAL_ENEMY        = (MONST_INANIMATE | MONST_INVULNERABLE | MONST_IMMOBILE | MONST_RESTRICTED_TO_LIQUID | MONST_GETS_TURN_ON_ACTIVATION | MONST_MAINTAINS_DISTANCE)
+MONST_NEVER_MUTATED             = (MONST_INVISIBLE | MONST_INANIMATE | MONST_IMMOBILE | MONST_INVULNERABLE)
+
+-- monster ability flags
+MA_HIT_HALLUCINATE              = Fl(0)    -- monster can hit to cause hallucinations
+MA_HIT_STEAL_FLEE               = Fl(1)    -- monster can steal an item and then run away
+MA_ENTER_SUMMONS                = Fl(2)    -- monster will "become" its summoned leader, reappearing when that leader is defeated
+MA_HIT_DEGRADE_ARMOR            = Fl(3)    -- monster damages armor
+MA_CAST_SUMMON                  = Fl(4)    -- requires that there be one or more summon hordes with this monster type as the leader
+MA_SEIZES                       = Fl(5)    -- monster seizes enemies before attacking
+MA_POISONS                      = Fl(6)    -- monster's damage is dealt in the form of poison
+MA_DF_ON_DEATH                  = Fl(7)    -- monster spawns its DF when it dies
+MA_CLONE_SELF_ON_DEFEND         = Fl(8)    -- monster splits in two when struck
+MA_KAMIKAZE                     = Fl(9)    -- monster dies instead of attacking
+MA_TRANSFERENCE                 = Fl(10)   -- monster recovers 40 or 90% of the damage that it inflicts as health
+MA_CAUSES_WEAKNESS              = Fl(11)   -- monster attacks cause weakness status in target
+MA_ATTACKS_PENETRATE            = Fl(12)   -- monster attacks all adjacent enemies, like an axe
+MA_ATTACKS_ALL_ADJACENT         = Fl(13)   -- monster attacks penetrate one layer of enemies, like a spear
+MA_ATTACKS_EXTEND               = Fl(14)   -- monster attacks from a distance in a cardinal direction, like a whip
+MA_AVOID_CORRIDORS              = Fl(15)   -- monster will avoid corridors when hunting
+
+SPECIAL_HIT                     = (MA_HIT_HALLUCINATE | MA_HIT_STEAL_FLEE | MA_HIT_DEGRADE_ARMOR | MA_POISONS | MA_TRANSFERENCE | MA_CAUSES_WEAKNESS)
+LEARNABLE_ABILITIES             = (MA_TRANSFERENCE | MA_CAUSES_WEAKNESS)
+
+MA_NON_NEGATABLE_ABILITIES      = (MA_ATTACKS_PENETRATE | MA_ATTACKS_ALL_ADJACENT)
+MA_NEVER_VORPAL_ENEMY           = (MA_KAMIKAZE)
+MA_NEVER_MUTATED                = (MA_KAMIKAZE)
+
+-- creature status effect indices
+i = 0
+STATUS_WEAKENED                 = nexti()
+STATUS_TELEPATHIC               = nexti()
+STATUS_HALLUCINATING            = nexti()
+STATUS_LEVITATING               = nexti()
+STATUS_SLOWED                   = nexti()
+STATUS_HASTED                   = nexti()
+STATUS_CONFUSED                 = nexti()
+STATUS_BURNING                  = nexti()
+STATUS_PARALYZED                = nexti()
+STATUS_POISONED                 = nexti()
+STATUS_STUCK                    = nexti()
+STATUS_NAUSEOUS                 = nexti()
+STATUS_DISCORDANT               = nexti()
+STATUS_IMMUNE_TO_FIRE           = nexti()
+STATUS_EXPLOSION_IMMUNITY       = nexti()
+STATUS_NUTRITION                = nexti()
+STATUS_ENTERS_LEVEL_IN          = nexti()
+STATUS_MAGICAL_FEAR             = nexti()
+STATUS_ENTRANCED                = nexti()
+STATUS_DARKNESS                 = nexti()
+STATUS_LIFESPAN_REMAINING       = nexti()
+STATUS_SHIELDED                 = nexti()
+STATUS_INVISIBLE                = nexti()
+STATUS_AGGRAVATING              = nexti()
