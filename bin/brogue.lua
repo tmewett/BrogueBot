@@ -68,13 +68,7 @@ end
 -- sample, override to customize
 function act()
 
-    local pcell
-    for i=1, DCOLS*DROWS do
-        if world.flags[i] & HAS_PLAYER > 0 then
-            pcell = i
-            break
-        end
-    end
+    local pcell = rogue.cell
 
     for let, item in pairs(rogue.pack) do
         -- drop stacked items as a test
@@ -95,7 +89,7 @@ function act()
 end
 
 function pushevents()
-    world, rogue = getworld(), {}
+    world, rogue = getworld(), getplayer()
     rogue.pack = getpack()
     act()
 end

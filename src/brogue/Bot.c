@@ -87,6 +87,43 @@ static void pushItem(lua_State *L, item *it) {
     // TODO damage
 }
 
+// push a creature table onto the Lua stack
+static void pushCreature(lua_State *L, creature *cr) {
+    lua_newtable(L);
+
+    lua_pushinteger(L, cr->xLoc * DROWS + cr->yLoc + 1);
+    lua_setfield(L, -2, "cell");
+    lua_pushinteger(L, cr->currentHP);
+    lua_setfield(L, -2, "hp");
+    lua_pushinteger(L, cr->creatureState);
+    lua_setfield(L, -2, "state");
+    lua_pushinteger(L, cr->info.maxHP);
+    lua_setfield(L, -2, "maxhp");
+    lua_pushinteger(L, cr->weaknessAmount);
+    lua_setfield(L, -2, "weakness");
+    lua_pushinteger(L, cr->poisonAmount);
+    lua_setfield(L, -2, "poison");
+    lua_pushinteger(L, cr->movementSpeed);
+    lua_setfield(L, -2, "movespeed");
+    lua_pushinteger(L, cr->attackSpeed);
+    lua_setfield(L, -2, "attackspeed");
+    lua_pushinteger(L, cr->info.damage.lowerBound);
+    lua_setfield(L, -2, "mindamage");
+    lua_pushinteger(L, cr->info.damage.upperBound);
+    lua_setfield(L, -2, "maxdamage");
+    lua_pushinteger(L, cr->info.flags);
+    lua_setfield(L, -2, "flags");
+    lua_pushinteger(L, cr->info.abilityFlags);
+    lua_setfield(L, -2, "abilities");
+
+    lua_newtable(L);
+    for (int i=1; i <= NUMBER_OF_STATUS_EFFECTS; i++) {
+        lua_pushinteger(L, cr->status[i-1]);
+        lua_seti(L, -2, i);
+    }
+    lua_setfield(L, -2, "statuses");
+}
+
 static int l_message(lua_State *L) {
     message(luaL_checkstring(L, 1), false);
     return 0;
@@ -168,6 +205,25 @@ static int l_getpack(lua_State *L) {
     return 1;
 }
 
+static int l_getplayer(lua_State *L) {
+    pushCreature(L, &player);
+
+    char let[] = " ";
+
+    if (rogue.weapon) {
+        let[0] = rogue.weapon->inventoryLetter;
+        lua_pushstring(L, let);
+        lua_setfield(L, -2, "weapon");
+    }
+    if (rogue.armor) {
+        let[0] = rogue.armor->inventoryLetter;
+        lua_pushstring(L, let);
+        lua_setfield(L, -2, "armor");
+    }
+
+    return 1;
+}
+
 static int l_distmap(lua_State *L) {
     lua_createtable(L, DCOLS*DROWS, 0);
 
@@ -194,6 +250,7 @@ static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
+    {"getplayer", l_getplayer},
     {"distancemap", l_distmap},
     {NULL, NULL},
 };
