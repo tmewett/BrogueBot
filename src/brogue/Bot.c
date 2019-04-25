@@ -205,6 +205,19 @@ static int l_getpack(lua_State *L) {
     return 1;
 }
 
+static int l_getcreatures(lua_State *L) {
+    lua_newtable(L);
+
+    int i = 1;
+    for (creature *cr = monsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
+        if (!canSeeMonster(cr)) continue;
+        pushCreature(L, cr);
+        lua_seti(L, -2, i++);
+    }
+
+    return 1;
+}
+
 static int l_getplayer(lua_State *L) {
     pushCreature(L, &player);
 
@@ -250,6 +263,7 @@ static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
+    {"getcreatures", l_getcreatures},
     {"getplayer", l_getplayer},
     {"distancemap", l_distmap},
     {NULL, NULL},

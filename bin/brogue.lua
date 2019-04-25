@@ -75,13 +75,12 @@ function act()
         if item.quantity > 1 then drop(item) end
     end
 
-    for i=1, DCOLS*DROWS do
-        if world.flags[i] & VISIBLE > 0 and world.flags[i] & HAS_MONSTER > 0 then
-            local dmap = distancemap(i, 0)
-            local dir = nextstep(pcell, dmap)
-            stepto(dir)
-            return
-        end
+    if #creatures > 0 then
+        local cell = creatures[1].cell
+        local dmap = distancemap(cell, 0)
+        local dir = nextstep(pcell, dmap)
+        stepto(dir)
+        return
     end
 
     --message(string.format("I am at (%d, %d)", px, py))
@@ -91,5 +90,6 @@ end
 function pushevents()
     world, rogue = getworld(), getplayer()
     rogue.pack = getpack()
+    creatures = getcreatures()
     act()
 end
