@@ -31,18 +31,24 @@ function diagonalblocked(cell1, cell2)
         or hastileflag(cell(x2,y1), T_OBSTRUCTS_DIAGONAL_MOVEMENT)
 end
 
+celldiffs = {
+    [UP]          = -1,
+    [DOWN]        = 1,
+    [LEFT]        = -DROWS,
+    [RIGHT]       = DROWS,
+    [UPLEFT]      = -DROWS - 1,
+    [DOWNLEFT]    = -DROWS + 1,
+    [UPRIGHT]     = DROWS - 1,
+    [DOWNRIGHT]   = DROWS + 1
+}
+
 -- returns a table all 8 cells in the neighborhood of the cell, indexed by direction
 function neighborhood(cell)
-    return {
-        [UP]          = isinworld(cell - 1        ) or nil,
-        [DOWN]        = isinworld(cell + 1        ) or nil,
-        [LEFT]        = isinworld(cell - DROWS    ) or nil,
-        [RIGHT]       = isinworld(cell + DROWS    ) or nil,
-        [UPLEFT]      = isinworld(cell - DROWS - 1) or nil,
-        [DOWNLEFT]    = isinworld(cell - DROWS + 1) or nil,
-        [UPRIGHT]     = isinworld(cell + DROWS - 1) or nil,
-        [DOWNRIGHT]   = isinworld(cell + DROWS + 1) or nil
-    }
+    local t = {}
+    for dir, v in pairs(celldiffs) do
+        t[dir] = isinworld(cell + v)
+    end
+    return t
 end
 
 -- returns the direction from the cell of a path of shortest distance, according to distmap
