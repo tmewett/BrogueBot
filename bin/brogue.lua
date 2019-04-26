@@ -65,28 +65,6 @@ function drop(item)
     presskeys("d"..item.letter)
 end
 
--- sample, override to customize
-function act()
-
-    local pcell = rogue.cell
-
-    for let, item in pairs(rogue.pack) do
-        -- drop stacked items as a test
-        if item.quantity > 1 then drop(item) end
-    end
-
-    if #creatures > 0 then
-        local cell = creatures[1].cell
-        local dmap = distancemap(cell, 0)
-        local dir = nextstep(pcell, dmap)
-        stepto(dir)
-        return
-    end
-
-    --message(string.format("I am at (%d, %d)", px, py))
-    stepto(math.random(1, 8))
-end
-
 function pushevents()
     world, rogue = getworld(), getplayer()
     rogue.pack = getpack()
