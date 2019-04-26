@@ -273,8 +273,16 @@ static int l_getcreatures(lua_State *L) {
 static int l_getplayer(lua_State *L) {
     pushCreature(L, &player);
 
-    char let[] = " ";
+    lua_pushinteger(L, rogue.depthLevel);
+    lua_setfield(L, -2, "depth");
+    lua_pushinteger(L, rogue.playerTurnNumber);
+    lua_setfield(L, -2, "turn");
+    lua_pushinteger(L, rogue.strength);
+    lua_setfield(L, -2, "strength");
+    lua_pushinteger(L, rogue.aggroRange);
+    lua_setfield(L, -2, "stealthrange");
 
+    char let[] = " ";
     if (rogue.weapon) {
         let[0] = rogue.weapon->inventoryLetter;
         lua_pushstring(L, let);
