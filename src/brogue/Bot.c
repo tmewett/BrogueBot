@@ -295,11 +295,21 @@ static luaL_Reg reg[] = {
 
 void resetBot(char *filename) {
     eventQueue.start = eventQueue.end = 0;
+
     if (L != NULL) lua_close(L);
     L = luaL_newstate();
-    if (L == NULL) botAbort("Cannot initialise Lua.");
+
+    if (L == NULL) {
+        botAbort("Cannot initialise Lua.");
+        return;
+    }
+
     luaL_openlibs(L);
     lua_pushglobaltable(L);
     luaL_setfuncs(L, reg, 0);
-    if (luaL_dofile(L, filename)) botAbort("Could not load bot script.");
+
+    if (luaL_dofile(L, filename)) {
+        botAbort("Could not load bot script.");
+        return;
+    }
 }
