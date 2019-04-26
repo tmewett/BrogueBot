@@ -193,5 +193,177 @@ STATUS_INVISIBLE                = nexti()
 STATUS_AGGRAVATING              = nexti()
 
 
+-- item categories
+FOOD                = Fl(0)
+WEAPON              = Fl(1)
+ARMOR               = Fl(2)
+POTION              = Fl(3)
+SCROLL              = Fl(4)
+STAFF               = Fl(5)
+WAND                = Fl(6)
+RING                = Fl(7)
+CHARM               = Fl(8)
+GOLD                = Fl(9)
+AMULET              = Fl(10)
+GEM                 = Fl(11)
+KEY                 = Fl(12)
+
+CAN_BE_DETECTED     = (WEAPON | ARMOR | POTION | SCROLL | RING | CHARM | WAND | STAFF | AMULET)
+PRENAMED_CATEGORY   = (FOOD | GOLD | AMULET | GEM | KEY)
+NEVER_IDENTIFIABLE  = (FOOD | CHARM | GOLD | AMULET | GEM | KEY)
+COUNTS_TOWARD_SCORE = (GOLD | AMULET | GEM)
+CAN_BE_SWAPPED      = (WEAPON | ARMOR | STAFF | CHARM | RING)
+ALL_ITEMS           = (FOOD|POTION|WEAPON|ARMOR|STAFF|WAND|SCROLL|RING|CHARM|GOLD|AMULET|GEM|KEY)
+
+
+-- item kinds
+i = 0
+KEY_DOOR                        = nexti()
+KEY_CAGE                        = nexti()
+KEY_PORTAL                      = nexti()
+
+i = 0
+RATION                          = nexti()
+FRUIT                           = nexti()
+
+i = 0
+POTION_LIFE                     = nexti()
+POTION_STRENGTH                 = nexti()
+POTION_TELEPATHY                = nexti()
+POTION_LEVITATION               = nexti()
+POTION_DETECT_MAGIC             = nexti()
+POTION_HASTE_SELF               = nexti()
+POTION_FIRE_IMMUNITY            = nexti()
+POTION_INVISIBILITY             = nexti()
+POTION_POISON                   = nexti()
+POTION_PARALYSIS                = nexti()
+POTION_HALLUCINATION            = nexti()
+POTION_CONFUSION                = nexti()
+POTION_INCINERATION             = nexti()
+POTION_DARKNESS                 = nexti()
+POTION_DESCENT                  = nexti()
+POTION_LICHEN                   = nexti()
+
+i = 0
+DAGGER                          = nexti()
+SWORD                           = nexti()
+BROADSWORD                      = nexti()
+
+WHIP                            = nexti()
+RAPIER                          = nexti()
+FLAIL                           = nexti()
+
+MACE                            = nexti()
+HAMMER                          = nexti()
+
+SPEAR                           = nexti()
+PIKE                            = nexti()
+
+AXE                             = nexti()
+WAR_AXE                         = nexti()
+
+DART                            = nexti()
+INCENDIARY_DART                 = nexti()
+JAVELIN                         = nexti()
+
+i = 0
+LEATHER_ARMOR                   = nexti()
+SCALE_MAIL                      = nexti()
+CHAIN_MAIL                      = nexti()
+BANDED_MAIL                     = nexti()
+SPLINT_MAIL                     = nexti()
+PLATE_MAIL                      = nexti()
+
+i = 0
+WAND_TELEPORT                   = nexti()
+WAND_SLOW                       = nexti()
+WAND_POLYMORPH                  = nexti()
+WAND_NEGATION                   = nexti()
+WAND_DOMINATION                 = nexti()
+WAND_BECKONING                  = nexti()
+WAND_PLENTY                     = nexti()
+WAND_INVISIBILITY               = nexti()
+WAND_EMPOWERMENT                = nexti()
+
+i = 0
+STAFF_LIGHTNING                 = nexti()
+STAFF_FIRE                      = nexti()
+STAFF_POISON                    = nexti()
+STAFF_TUNNELING                 = nexti()
+STAFF_BLINKING                  = nexti()
+STAFF_ENTRANCEMENT              = nexti()
+STAFF_OBSTRUCTION               = nexti()
+STAFF_DISCORD                   = nexti()
+STAFF_CONJURATION               = nexti()
+STAFF_HEALING                   = nexti()
+STAFF_HASTE                     = nexti()
+STAFF_PROTECTION                = nexti()
+
+i = 0
+RING_CLAIRVOYANCE               = nexti()
+RING_STEALTH                    = nexti()
+RING_REGENERATION               = nexti()
+RING_TRANSFERENCE               = nexti()
+RING_LIGHT                      = nexti()
+RING_AWARENESS                  = nexti()
+RING_WISDOM                     = nexti()
+RING_REAPING                    = nexti()
+
+i = 0
+CHARM_HEALTH                    = nexti()
+CHARM_PROTECTION                = nexti()
+CHARM_HASTE                     = nexti()
+CHARM_FIRE_IMMUNITY             = nexti()
+CHARM_INVISIBILITY              = nexti()
+CHARM_TELEPATHY                 = nexti()
+CHARM_LEVITATION                = nexti()
+CHARM_SHATTERING                = nexti()
+CHARM_GUARDIAN                  = nexti()
+CHARM_TELEPORTATION             = nexti()
+CHARM_RECHARGING                = nexti()
+CHARM_NEGATION                  = nexti()
+
+i = 0
+SCROLL_ENCHANTING               = nexti()
+SCROLL_IDENTIFY                 = nexti()
+SCROLL_TELEPORT                 = nexti()
+SCROLL_REMOVE_CURSE             = nexti()
+SCROLL_RECHARGING               = nexti()
+SCROLL_PROTECT_ARMOR            = nexti()
+SCROLL_PROTECT_WEAPON           = nexti()
+SCROLL_SANCTUARY                = nexti()
+SCROLL_MAGIC_MAPPING            = nexti()
+SCROLL_NEGATION                 = nexti()
+SCROLL_SHATTERING               = nexti()
+SCROLL_DISCORD                  = nexti()
+SCROLL_AGGRAVATE_MONSTER        = nexti()
+SCROLL_SUMMON_MONSTER           = nexti()
+
+
 -- item runics
-UNKNOWN_RUNIC = -1
+UNKNOWN_RUNIC                   = -1
+
+i = 0
+W_SPEED                         = nexti()
+W_QUIETUS                       = nexti()
+W_PARALYSIS                     = nexti()
+W_MULTIPLICITY                  = nexti()
+W_SLOWING                       = nexti()
+W_CONFUSION                     = nexti()
+W_FORCE                         = nexti()
+W_SLAYING                       = nexti()
+W_MERCY                         = nexti()
+W_PLENTY                        = nexti()
+
+i = 0
+A_MULTIPLICITY                  = nexti()
+A_MUTUALITY                     = nexti()
+A_ABSORPTION                    = nexti()
+A_REPRISAL                      = nexti()
+A_IMMUNITY                      = nexti()
+A_REFLECTION                    = nexti()
+A_RESPIRATION                   = nexti()
+A_DAMPENING                     = nexti()
+A_BURDEN                        = nexti()
+A_VULNERABILITY                 = nexti()
+A_IMMOLATION                    = nexti()
