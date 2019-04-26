@@ -5,6 +5,7 @@
 #include "IncludeGlobals.h"
 
 #define QUEUE_LEN 16
+#define UNKNOWN_RUNIC -1
 
 static lua_State *L = NULL;
 char *botScript = "";
@@ -52,15 +53,13 @@ void nextBotEvent(rogueEvent *returnEvent) {
 // push an item table onto the Lua stack
 static void pushItem(lua_State *L, item *it) {
     lua_newtable(L);
+
     enum itemCategory c = it->category;
+    enum itemFlags flags = it->flags;
     char letter[2] = {it->inventoryLetter, 0};
 
     lua_pushinteger(L, c);
     lua_setfield(L, -2, "category");
-    lua_pushinteger(L, it->kind);
-    lua_setfield(L, -2, "kind");
-    lua_pushinteger(L, it->flags);
-    lua_setfield(L, -2, "flags");
     lua_pushinteger(L, it->quantity);
     lua_setfield(L, -2, "quantity");
     lua_pushstring(L, letter);
@@ -71,19 +70,43 @@ static void pushItem(lua_State *L, item *it) {
     if (c==WEAPON || c==ARMOR) {
         lua_pushinteger(L, it->strengthRequired);
         lua_setfield(L, -2, "strength");
-        lua_pushinteger(L, it->enchant2);
-        lua_setfield(L, -2, "runic");
+
+        if (it->flags & ITEM_RUNIC) {
+            // only give the info about the runic that the player knows
+            if ((it->flags & (ITEM_IDENTIFIED | ITEM_RUNIC_HINTED))
+                && !(it->flags & ITEM_RUNIC_IDENTIFIED)) {
+                lua_pushinteger(L, UNKNOWN_RUNIC);
+                lua_setfield(L, -2, "runic");
+            } else if ((it->flags & ITEM_RUNIC_IDENTIFIED)) {
+                lua_pushinteger(L, it->enchant2);
+                lua_setfield(L, -2, "runic");
+            } else {
+                // if player has no idea about the runic, tell the bot there is none
+                flags &= ~ITEM_RUNIC;
+            }
+        }
     }
+
     if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
         lua_pushinteger(L, it->charges);
         lua_setfield(L, -2, "charges");
         lua_pushinteger(L, it->enchant1);
         lua_setfield(L, -2, "enchant");
     }
+
+    if ((c==WEAPON || c==ARMOR) || (it->flags & ITEM_IDENTIFIED)) {
+        lua_pushinteger(L, it->kind);
+        lua_setfield(L, -2, "kind");
+    }
+
     if (c==ARMOR) {
         lua_pushinteger(L, it->armor);
         lua_setfield(L, -2, "armor");
     }
+
+    lua_pushinteger(L, flags);
+    lua_setfield(L, -2, "flags");
+
     // TODO damage
 }
 
@@ -173,6 +196,7 @@ static int l_getworld(lua_State *L) {
     pcell *cell;
     int j;
     for (int i=1; i <= DCOLS*DROWS; ++i) {
+        if (!playerCanSee((i-1) / DROWS, (i-1) % DROWS)) continue;
         j = 2;
         cell = &pmap[0][i-1];
 

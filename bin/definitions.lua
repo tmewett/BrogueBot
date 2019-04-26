@@ -16,6 +16,7 @@ DOWNRIGHT       = 8
 
 UNREACHABLE = 30000
 
+
 -- cell flags
 DISCOVERED                  = Fl(0)
 VISIBLE                     = Fl(1)    -- cell has sufficient light and is in field of view, ready to draw.
@@ -59,6 +60,7 @@ PERMANENT_TILE_FLAGS = (DISCOVERED | MAGIC_MAPPED | ITEM_DETECTED | HAS_ITEM | H
 
 ANY_KIND_OF_VISIBLE         = (VISIBLE | CLAIRVOYANT_VISIBLE | TELEPATHIC_VISIBLE)
 
+
 -- terrain/tile flags
 T_OBSTRUCTS_PASSABILITY         = Fl(0)        -- cannot be walked through
 T_OBSTRUCTS_VISION              = Fl(1)        -- blocks line of sight
@@ -93,6 +95,7 @@ T_CAN_BE_BRIDGED                = (T_AUTO_DESCENT)
 T_OBSTRUCTS_EVERYTHING          = (T_OBSTRUCTS_PASSABILITY | T_OBSTRUCTS_VISION | T_OBSTRUCTS_ITEMS | T_OBSTRUCTS_GAS | T_OBSTRUCTS_SURFACE_EFFECTS | T_OBSTRUCTS_DIAGONAL_MOVEMENT)
 T_HARMFUL_TERRAIN               = (T_CAUSES_POISON | T_IS_FIRE | T_CAUSES_DAMAGE | T_CAUSES_PARALYSIS | T_CAUSES_CONFUSION | T_CAUSES_EXPLOSIVE_DAMAGE)
 T_RESPIRATION_IMMUNITIES        = (T_CAUSES_DAMAGE | T_CAUSES_CONFUSION | T_CAUSES_PARALYSIS | T_CAUSES_NAUSEA)
+
 
 -- monster behaviour flags
 MONST_INVISIBLE                 = Fl(0)    -- monster is invisible
@@ -135,6 +138,7 @@ LEARNABLE_BEHAVIORS             = (MONST_INVISIBLE | MONST_FLIES | MONST_IMMUNE_
 MONST_NEVER_VORPAL_ENEMY        = (MONST_INANIMATE | MONST_INVULNERABLE | MONST_IMMOBILE | MONST_RESTRICTED_TO_LIQUID | MONST_GETS_TURN_ON_ACTIVATION | MONST_MAINTAINS_DISTANCE)
 MONST_NEVER_MUTATED             = (MONST_INVISIBLE | MONST_INANIMATE | MONST_IMMOBILE | MONST_INVULNERABLE)
 
+
 -- monster ability flags
 MA_HIT_HALLUCINATE              = Fl(0)    -- monster can hit to cause hallucinations
 MA_HIT_STEAL_FLEE               = Fl(1)    -- monster can steal an item and then run away
@@ -159,6 +163,7 @@ LEARNABLE_ABILITIES             = (MA_TRANSFERENCE | MA_CAUSES_WEAKNESS)
 MA_NON_NEGATABLE_ABILITIES      = (MA_ATTACKS_PENETRATE | MA_ATTACKS_ALL_ADJACENT)
 MA_NEVER_VORPAL_ENEMY           = (MA_KAMIKAZE)
 MA_NEVER_MUTATED                = (MA_KAMIKAZE)
+
 
 -- creature status effect indices
 i = 0
@@ -186,3 +191,7 @@ STATUS_LIFESPAN_REMAINING       = nexti()
 STATUS_SHIELDED                 = nexti()
 STATUS_INVISIBLE                = nexti()
 STATUS_AGGRAVATING              = nexti()
+
+
+-- item runics
+UNKNOWN_RUNIC = -1
