@@ -51,26 +51,21 @@ void nextBotEvent(rogueEvent *returnEvent) {
 }
 
 // push an item table onto the Lua stack
-static void pushItem(lua_State *L, item *it, boolean inPack) {
+static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
     lua_newtable(L);
 
     enum itemCategory c = it->category;
-    enum itemFlags flags = it->flags;
-    char letter[2] = {it->inventoryLetter, 0};
+    uchar magicChar = itemMagicChar(it);
 
-    lua_pushinteger(L, c);
-    lua_setfield(L, -2, "category");
-    lua_pushinteger(L, it->quantity);
-    lua_setfield(L, -2, "quantity");
-
-    if ((c==WEAPON || c==ARMOR) || (it->flags & ITEM_IDENTIFIED)) {
-        lua_pushinteger(L, it->kind);
-        lua_setfield(L, -2, "kind");
+    if (magicChar != 0 && (it->flags & ITEM_MAGIC_DETECTED)) {
+        lua_pushboolean(L, true);
+        lua_setfield(L, -2, (magicChar == GOOD_MAGIC_CHAR ? "blessed" : "cursed"));
     }
 
-    // TODO magic detection; good or bad
-
     if (inPack) {
+        enum itemFlags flags = it->flags;
+        char letter[] = {it->inventoryLetter, 0};
+
         lua_pushstring(L, letter);
         lua_setfield(L, -2, "letter");
 
@@ -113,8 +108,20 @@ static void pushItem(lua_State *L, item *it, boolean inPack) {
     } else {
         lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
         lua_setfield(L, -2, "cell");
+
+        // if we can't see the item either, that's all
+        if (!visible) return;
     }
 
+    lua_pushinteger(L, c);
+    lua_setfield(L, -2, "category");
+    lua_pushinteger(L, it->quantity);
+    lua_setfield(L, -2, "quantity");
+
+    if ((c==WEAPON || c==ARMOR) || (it->flags & ITEM_IDENTIFIED)) {
+        lua_pushinteger(L, it->kind);
+        lua_setfield(L, -2, "kind");
+    }
 }
 
 // push a creature table onto the Lua stack
@@ -229,7 +236,7 @@ static int l_getpack(lua_State *L) {
 
     char let[2] = " ";
     for (item *it = packItems->nextItem; it != NULL; it = it->nextItem) {
-        pushItem(L, it, true);
+        pushItem(L, it, true, true);
         let[0] = it->inventoryLetter;
         lua_setfield(L, -2, let);
     }
@@ -241,10 +248,10 @@ static int l_getitems(lua_State *L) {
 
     int i = 1;
     for (item *it = floorItems->nextItem; it != NULL; it = it->nextItem) {
-        // only give info on items that can be seen
-        // TODO also give info for detected item presences via detect magic potion
-        if (!playerCanSee(it->xLoc, it->yLoc)) continue;
-        pushItem(L, it, false);
+        // only give info on items that can be seen or are magic-detected
+        boolean seen = playerCanSee(it->xLoc, it->yLoc);
+        if (!seen && !(it->flags & ITEM_MAGIC_DETECTED)) continue;
+        pushItem(L, it, false, seen);
         lua_seti(L, -2, i++);
     }
     return 1;
