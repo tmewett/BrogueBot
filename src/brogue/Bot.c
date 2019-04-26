@@ -236,6 +236,20 @@ static int l_getpack(lua_State *L) {
     return 1;
 }
 
+static int l_getitems(lua_State *L) {
+    lua_newtable(L);
+
+    int i = 1;
+    for (item *it = floorItems->nextItem; it != NULL; it = it->nextItem) {
+        // only give info on items that can be seen
+        // TODO also give info for detected item presences via detect magic potion
+        if (!playerCanSee(it->xLoc, it->yLoc)) continue;
+        pushItem(L, it, false);
+        lua_seti(L, -2, i++);
+    }
+    return 1;
+}
+
 static int l_getcreatures(lua_State *L) {
     lua_newtable(L);
 
@@ -294,6 +308,7 @@ static luaL_Reg reg[] = {
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
+    {"getitems", l_getitems},
     {"getcreatures", l_getcreatures},
     {"getplayer", l_getplayer},
     {"distancemap", l_distmap},
