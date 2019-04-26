@@ -51,7 +51,7 @@ void nextBotEvent(rogueEvent *returnEvent) {
 }
 
 // push an item table onto the Lua stack
-static void pushItem(lua_State *L, item *it) {
+static void pushItem(lua_State *L, item *it, boolean inPack) {
     lua_newtable(L);
 
     enum itemCategory c = it->category;
@@ -62,52 +62,59 @@ static void pushItem(lua_State *L, item *it) {
     lua_setfield(L, -2, "category");
     lua_pushinteger(L, it->quantity);
     lua_setfield(L, -2, "quantity");
-    lua_pushstring(L, letter);
-    lua_setfield(L, -2, "letter");
-    lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
-    lua_setfield(L, -2, "cell");
-
-    if (c==WEAPON || c==ARMOR) {
-        lua_pushinteger(L, it->strengthRequired);
-        lua_setfield(L, -2, "strength");
-
-        if (it->flags & ITEM_RUNIC) {
-            // only give the info about the runic that the player knows
-            if ((it->flags & (ITEM_IDENTIFIED | ITEM_RUNIC_HINTED))
-                && !(it->flags & ITEM_RUNIC_IDENTIFIED)) {
-                lua_pushinteger(L, UNKNOWN_RUNIC);
-                lua_setfield(L, -2, "runic");
-            } else if ((it->flags & ITEM_RUNIC_IDENTIFIED)) {
-                lua_pushinteger(L, it->enchant2);
-                lua_setfield(L, -2, "runic");
-            } else {
-                // if player has no idea about the runic, tell the bot there is none
-                flags &= ~ITEM_RUNIC;
-            }
-        }
-    }
-
-    if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
-        lua_pushinteger(L, it->charges);
-        lua_setfield(L, -2, "charges");
-        lua_pushinteger(L, it->enchant1);
-        lua_setfield(L, -2, "enchant");
-    }
 
     if ((c==WEAPON || c==ARMOR) || (it->flags & ITEM_IDENTIFIED)) {
         lua_pushinteger(L, it->kind);
         lua_setfield(L, -2, "kind");
     }
 
-    if (c==ARMOR) {
-        lua_pushinteger(L, it->armor);
-        lua_setfield(L, -2, "armor");
+    // TODO magic detection; good or bad
+
+    if (inPack) {
+        lua_pushstring(L, letter);
+        lua_setfield(L, -2, "letter");
+
+        if (c==WEAPON || c==ARMOR) {
+            lua_pushinteger(L, it->strengthRequired);
+            lua_setfield(L, -2, "strength");
+
+            if (it->flags & ITEM_RUNIC) {
+                // only give the info about the runic that the player knows
+                if ((it->flags & (ITEM_IDENTIFIED | ITEM_RUNIC_HINTED))
+                    && !(it->flags & ITEM_RUNIC_IDENTIFIED)) {
+                    lua_pushinteger(L, UNKNOWN_RUNIC);
+                    lua_setfield(L, -2, "runic");
+                } else if ((it->flags & ITEM_RUNIC_IDENTIFIED)) {
+                    lua_pushinteger(L, it->enchant2);
+                    lua_setfield(L, -2, "runic");
+                } else {
+                    // if player has no idea about the runic, tell the bot there is none
+                    flags &= ~ITEM_RUNIC;
+                }
+            }
+        }
+
+        if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
+            lua_pushinteger(L, it->charges);
+            lua_setfield(L, -2, "charges");
+            lua_pushinteger(L, it->enchant1);
+            lua_setfield(L, -2, "enchant");
+        }
+
+        if (c==ARMOR) {
+            lua_pushinteger(L, it->armor);
+            lua_setfield(L, -2, "armor");
+        }
+
+        lua_pushinteger(L, flags);
+        lua_setfield(L, -2, "flags");
+
+        // TODO damage
+    } else {
+        lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
+        lua_setfield(L, -2, "cell");
     }
 
-    lua_pushinteger(L, flags);
-    lua_setfield(L, -2, "flags");
-
-    // TODO damage
 }
 
 // push a creature table onto the Lua stack
@@ -222,7 +229,7 @@ static int l_getpack(lua_State *L) {
 
     char let[2] = " ";
     for (item *it = packItems->nextItem; it != NULL; it = it->nextItem) {
-        pushItem(L, it);
+        pushItem(L, it, true);
         let[0] = it->inventoryLetter;
         lua_setfield(L, -2, let);
     }
