@@ -67,6 +67,7 @@ void nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput, boolean col
 }
 
 boolean pauseForMilliseconds(short milliseconds) {
+    if (botControl) return true;
     return currentConsole.pauseForMilliseconds(milliseconds);
 }
 
