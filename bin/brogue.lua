@@ -1,5 +1,7 @@
 require 'definitions'
 
+world = {}
+
 function coords(cell)
     local cell = cell - 1
     -- y is inner, x is outer
@@ -72,8 +74,26 @@ function drop(item)
 end
 
 function pushevents()
-    world, rogue = getworld(), getplayer()
-    rogue.pack = getpack()
+
+    local pack = getpack()
+    rogue = getplayer()
+    rogue.weapon = pack[rogue.weapon]
+    rogue.armor = pack[rogue.armor]
+
+    local seenworld = getworld()
+    world.lastseen = world.lastseen or {}
+
+    for attr, t in pairs(seenworld) do
+        world[attr] = world[attr] or {}
+        for i, x in pairs(t) do
+            world[attr][i] = x
+            world.lastseen[i] = rogue.turn
+        end
+    end
+
+    rogue.pack = pack
     creatures = getcreatures()
+    items = getitems()
     act()
+
 end
