@@ -28,6 +28,7 @@ static void pushKey(signed long key) {
 
 static void botAbort(char *s) {
     botControl = false;
+    rogue.autoPlayingLevel = false;
     dialogAlert(s);
 }
 
@@ -349,4 +350,6 @@ void resetBot(char *filename) {
         botAbort("Could not load bot script.");
         return;
     }
+
+    rogue.autoPlayingLevel = true;
 }
