@@ -379,7 +379,12 @@ static void tcod_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput,
             returnEvent->param1 = ESCAPE_KEY;
             return;
         }
-        
+
+        if (botControl) {
+            nextBotEvent(returnEvent);
+            return;
+        }
+
         tryAgain = false;
         
         if (bufferedKey.vk != TCODK_NONE) {
