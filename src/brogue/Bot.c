@@ -32,6 +32,31 @@ static void botAbort(char *s) {
     dialogAlert(s);
 }
 
+// The following two functions are taken from lua.c in the Lua 5.3 source
+// (would be nice to have them built-in...!)
+static int msghandler(lua_State *L) {
+    const char *msg = lua_tostring(L, 1);
+    if (msg == NULL) {    /* is error object not a string? */
+        if (luaL_callmeta(L, 1, "__tostring") &&    /* does it have a metamethod */
+            lua_type(L, -1) == LUA_TSTRING)    /* that produces a string? */
+                return 1;    /* that is the message */
+        else
+            msg = lua_pushfstring(L, "(error object is a %s value)", luaL_typename(L, 1));
+    }
+    luaL_traceback(L, L, msg, 1);    /* append a standard traceback */
+    return 1;    /* return the traceback */
+}
+
+static int docall(lua_State *L, int narg, int nres) {
+    int status;
+    int base = lua_gettop(L) - narg;  /* function index */
+    lua_pushcfunction(L, msghandler);  /* push message handler */
+    lua_insert(L, base);  /* put it under function and args */
+    status = lua_pcall(L, narg, nres, base);
+    lua_remove(L, base);  /* remove message handler from the stack */
+    return status;
+}
+
 void nextBotEvent(rogueEvent *returnEvent) {
     returnEvent->eventType = EVENT_ERROR;
 
@@ -40,7 +65,7 @@ void nextBotEvent(rogueEvent *returnEvent) {
         eventQueue.start %= QUEUE_LEN;
     } else {
         lua_getglobal(L, "pushevents");
-        if (lua_pcall(L, 0, 0, 0)) {
+        if (docall(L, 0, 0)) {
             // there's an error object on stack; print it to message log
             message(luaL_checkstring(L, -1), false);
             botAbort("Error occured in Lua interpreter. Stopping bot. See message log for details.");
