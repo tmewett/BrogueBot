@@ -324,18 +324,34 @@ static int l_getplayer(lua_State *L) {
 }
 
 static int l_distmap(lua_State *L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    lua_Integer blockflags = luaL_checkinteger(L, 2);
+
     lua_createtable(L, DCOLS*DROWS, 0);
 
     short **dists = allocGrid();
-    lua_Integer cell = luaL_checkinteger(L, 1) - 1;
-    lua_Integer blockflags = luaL_checkinteger(L, 2);
-    calculateDistances(dists, cell/DROWS, cell%DROWS, blockflags, NULL, false, true);
+    fillGrid(dists, 30000);
+
+    lua_Integer i;
+    lua_pushnil(L);
+    while (lua_next(L, 1) != 0) {
+        if (!lua_isinteger(L, -1)) {
+            freeGrid(dists);
+            luaL_error(L, "table of cells cannot contain non-integers");
+        }
+        i = lua_tointeger(L, -1);
+        dists[0][i-1] = 0;
+        lua_pop(L, 1);
+    }
+
+    calculateDistancesNoClear(dists, blockflags, NULL, false, true);
 
     short d;
-    for (int i=1; i <= DCOLS*DROWS; ++i) {
-        d = dists[0][i-1];
+    for (int i=0; i < DCOLS*DROWS; ++i) {
+        if (!(pmap[i / DROWS][i % DROWS].flags & DISCOVERED)) continue;
+        d = dists[0][i];
         lua_pushinteger(L, d);
-        lua_seti(L, -2, i);
+        lua_seti(L, -2, i+1);
     }
 
     freeGrid(dists);

@@ -291,6 +291,51 @@ void calculateDistances(short **distanceMap,
     pdsBatchOutput(&map, distanceMap);
 }
 
+// BrogueBot addition. Like calculateDistances but allows us to use our own
+// initial distanceMap -- i.e. we can have multiple tiles with distance 0
+void calculateDistancesNoClear (short **distanceMap,
+                                unsigned long blockingTerrainFlags,
+                                creature *traveler,
+                                boolean canUseSecretDoors,
+                                boolean eightWays) {
+    creature *monst;
+    short **costMap = allocGrid();
+
+    short i, j;
+
+    for (i=0; i<DCOLS; i++) {
+        for (j=0; j<DROWS; j++) {
+            char cost;
+            monst = monsterAtLoc(i, j);
+            if (monst
+                && (monst->info.flags & (MONST_IMMUNE_TO_WEAPONS | MONST_INVULNERABLE))
+                && (monst->info.flags & (MONST_IMMOBILE | MONST_GETS_TURN_ON_ACTIVATION))) {
+
+                // Always avoid damage-immune stationary monsters.
+                cost = PDS_FORBIDDEN;
+            } else if (canUseSecretDoors
+                && cellHasTMFlag(i, j, TM_IS_SECRET)
+                && cellHasTerrainFlag(i, j, T_OBSTRUCTS_PASSABILITY)
+                && !(discoveredTerrainFlagsAtLoc(i, j) & T_OBSTRUCTS_PASSABILITY)) {
+
+                cost = 1;
+            } else if (cellHasTerrainFlag(i, j, T_OBSTRUCTS_PASSABILITY)
+                       || (traveler && traveler == &player && !(pmap[i][j].flags & (DISCOVERED | MAGIC_MAPPED)))) {
+
+                cost = cellHasTerrainFlag(i, j, T_OBSTRUCTS_DIAGONAL_MOVEMENT) ? PDS_OBSTRUCTION : PDS_FORBIDDEN;
+            } else if ((traveler && monsterAvoids(traveler, i, j)) || cellHasTerrainFlag(i, j, blockingTerrainFlags)) {
+                cost = PDS_FORBIDDEN;
+            } else {
+                cost = 1;
+            }
+
+            costMap[i][j] = cost;
+        }
+    }
+
+    dijkstraScan(distanceMap, costMap, eightWays);
+}
+
 short pathingDistance(short x1, short y1, short x2, short y2, unsigned long blockingTerrainFlags) {
     short retval, **distanceMap = allocGrid();
     calculateDistances(distanceMap, x2, y2, blockingTerrainFlags, NULL, true, true);
