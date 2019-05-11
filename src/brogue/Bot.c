@@ -11,6 +11,8 @@ static lua_State *L = NULL;
 char *botScript = "";
 boolean botControl = false;
 
+static short **workGrid = NULL;
+
 
     // Core functions for interfacing with Brogue
 
@@ -82,6 +84,14 @@ void nextBotEvent(rogueEvent *returnEvent) {
 
 
     // Lua API helper functions
+
+static lua_Integer checkCell(lua_State *L, int i) {
+    lua_Integer c = luaL_checkinteger(L, i) - 1;
+    if (c < 0 || c >= DROWS*DCOLS) {
+        luaL_error(L, "cell index out of range");
+    }
+    return c;
+}
 
 // push an item table onto the Lua stack
 static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
@@ -212,7 +222,11 @@ static int l_presskeys(lua_State *L) {
 }
 
 static int l_tileflags(lua_State *L) {
-    lua_pushinteger(L, tileCatalog[luaL_checkinteger(L, 1)].flags);
+    lua_Integer t = luaL_checkinteger(L, 1);
+    if (t < 0 || t >= NUMBER_TILETYPES) {
+        luaL_error(L, "invalid tile type");
+    }
+    lua_pushinteger(L, tileCatalog[t].flags);
     return 1;
 }
 
@@ -339,32 +353,26 @@ static int l_distmap(lua_State *L) {
 
     lua_createtable(L, DCOLS*DROWS, 0);
 
-    short **dists = allocGrid();
-    fillGrid(dists, 30000);
+    fillGrid(workGrid, 30000);
 
     lua_Integer i;
     lua_pushnil(L);
     while (lua_next(L, 1) != 0) {
-        if (!lua_isinteger(L, -1)) {
-            freeGrid(dists);
-            luaL_error(L, "table of cells cannot contain non-integers");
-        }
-        i = lua_tointeger(L, -1);
-        dists[0][i-1] = 0;
+        i = checkCell(L, -1);
+        workGrid[0][i] = 0;
         lua_pop(L, 1);
     }
 
-    calculateDistancesNoClear(dists, blockflags, NULL, false, true);
+    calculateDistancesNoClear(workGrid, blockflags, NULL, false, true);
 
     short d;
     for (int i=0; i < DCOLS*DROWS; ++i) {
         if (!(pmap[i / DROWS][i % DROWS].flags & DISCOVERED)) continue;
-        d = dists[0][i];
+        d = workGrid[0][i];
         lua_pushinteger(L, d);
         lua_seti(L, -2, i+1);
     }
 
-    freeGrid(dists);
     return 1;
 }
 
@@ -384,6 +392,8 @@ static luaL_Reg reg[] = {
 
 void resetBot(char *filename) {
     eventQueue.start = eventQueue.end = 0;
+
+    if (workGrid == NULL) workGrid = allocGrid();
 
     if (L != NULL) lua_close(L);
     L = luaL_newstate();
