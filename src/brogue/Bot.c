@@ -11,6 +11,9 @@ static lua_State *L = NULL;
 char *botScript = "";
 boolean botControl = false;
 
+
+    // Core functions for interfacing with Brogue
+
 static struct {
     rogueEvent events[QUEUE_LEN];
     int start;
@@ -22,7 +25,7 @@ static void pushEvent(rogueEvent ev) {
     eventQueue.end %= QUEUE_LEN;
 }
 
-static void pushKey(signed long key) {
+static void pressKey(signed long key) {
     pushEvent((rogueEvent){KEYSTROKE, key, 0, false, false});
 }
 
@@ -31,6 +34,7 @@ static void botAbort(char *s) {
     rogue.autoPlayingLevel = false;
     dialogAlert(s);
 }
+// And see resetBot, at the bottom of this file.
 
 // The following two functions are taken from lua.c in the Lua 5.3 source
 // (would be nice to have them built-in...!)
@@ -75,6 +79,9 @@ void nextBotEvent(rogueEvent *returnEvent) {
         }
     }
 }
+
+
+    // Lua API helper functions
 
 // push an item table onto the Lua stack
 static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
@@ -187,6 +194,9 @@ static void pushCreature(lua_State *L, creature *cr) {
     lua_setfield(L, -2, "statuses");
 }
 
+
+    // Lua API
+
 static int l_message(lua_State *L) {
     message(luaL_checkstring(L, 1), false);
     return 0;
@@ -196,7 +206,7 @@ static int l_presskeys(lua_State *L) {
     size_t len;
     const char *keys = luaL_checklstring(L, 1, &len);
     for (int i=0; i < len; i++) {
-        pushKey(keys[i]);
+        pressKey(keys[i]);
     }
     return 0;
 }
@@ -209,14 +219,14 @@ static int l_tileflags(lua_State *L) {
 static int l_stepto(lua_State *L) {
     lua_Integer dir = luaL_checkinteger(L, 1) - 1;
     switch ((enum directions)dir) {
-        case UP        : pushKey(UP_KEY); break;
-        case DOWN      : pushKey(DOWN_KEY); break;
-        case LEFT      : pushKey(LEFT_KEY); break;
-        case RIGHT     : pushKey(RIGHT_KEY); break;
-        case UPLEFT    : pushKey(UPLEFT_KEY); break;
-        case DOWNLEFT  : pushKey(DOWNLEFT_KEY); break;
-        case UPRIGHT   : pushKey(UPRIGHT_KEY); break;
-        case DOWNRIGHT : pushKey(DOWNRIGHT_KEY); break;
+        case UP        : pressKey(UP_KEY); break;
+        case DOWN      : pressKey(DOWN_KEY); break;
+        case LEFT      : pressKey(LEFT_KEY); break;
+        case RIGHT     : pressKey(RIGHT_KEY); break;
+        case UPLEFT    : pressKey(UPLEFT_KEY); break;
+        case DOWNLEFT  : pressKey(DOWNLEFT_KEY); break;
+        case UPRIGHT   : pressKey(UPRIGHT_KEY); break;
+        case DOWNRIGHT : pressKey(DOWNRIGHT_KEY); break;
         default:
             luaL_error(L, "invalid direction");
             break;
