@@ -1,6 +1,6 @@
 require 'definitions'
 
-world = {}
+levels = {}
 
 function coords(cell)
     local cell = cell - 1
@@ -81,6 +81,7 @@ function pushevents()
     rogue.armor = pack[rogue.armor]
 
     local seenworld = getworld()
+    world = levels[rogue.depth] or {}
     world.lastseen = world.lastseen or {}
 
     for attr, t in pairs(seenworld) do
@@ -90,6 +91,8 @@ function pushevents()
             world.lastseen[i] = rogue.turn
         end
     end
+
+    levels[rogue.depth] = world
 
     rogue.pack = pack
     creatures = getcreatures()
