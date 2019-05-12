@@ -1,4 +1,5 @@
 local function Fl(n) return 1 << n end
+local i
 local function nexti() i = i + 1; return i end
 
 DCOLS = 79
@@ -165,8 +166,17 @@ MA_NEVER_VORPAL_ENEMY           = (MA_KAMIKAZE)
 MA_NEVER_MUTATED                = (MA_KAMIKAZE)
 
 
+-- monster states
+i = -1
+MONSTER_SLEEPING                = nexti()
+MONSTER_HUNTING                 = nexti()  -- MONSTER_TRACKING_SCENT internally
+MONSTER_WANDERING               = nexti()
+MONSTER_FLEEING                 = nexti()
+MONSTER_ALLY                    = nexti()
+
+
 -- creature status effect indices
-i = 0
+i = 0 -- start from 1 as these are table indices
 STATUS_WEAKENED                 = nexti()
 STATUS_TELEPATHIC               = nexti()
 STATUS_HALLUCINATING            = nexti()
@@ -217,16 +227,16 @@ ALL_ITEMS           = (FOOD|POTION|WEAPON|ARMOR|STAFF|WAND|SCROLL|RING|CHARM|GOL
 
 
 -- item kinds
-i = 0
+i = -1
 KEY_DOOR                        = nexti()
 KEY_CAGE                        = nexti()
 KEY_PORTAL                      = nexti()
 
-i = 0
+i = -1
 RATION                          = nexti()
 FRUIT                           = nexti()
 
-i = 0
+i = -1
 POTION_LIFE                     = nexti()
 POTION_STRENGTH                 = nexti()
 POTION_TELEPATHY                = nexti()
@@ -244,7 +254,7 @@ POTION_DARKNESS                 = nexti()
 POTION_DESCENT                  = nexti()
 POTION_LICHEN                   = nexti()
 
-i = 0
+i = -1
 DAGGER                          = nexti()
 SWORD                           = nexti()
 BROADSWORD                      = nexti()
@@ -266,7 +276,7 @@ DART                            = nexti()
 INCENDIARY_DART                 = nexti()
 JAVELIN                         = nexti()
 
-i = 0
+i = -1
 LEATHER_ARMOR                   = nexti()
 SCALE_MAIL                      = nexti()
 CHAIN_MAIL                      = nexti()
@@ -274,7 +284,7 @@ BANDED_MAIL                     = nexti()
 SPLINT_MAIL                     = nexti()
 PLATE_MAIL                      = nexti()
 
-i = 0
+i = -1
 WAND_TELEPORT                   = nexti()
 WAND_SLOW                       = nexti()
 WAND_POLYMORPH                  = nexti()
@@ -285,7 +295,7 @@ WAND_PLENTY                     = nexti()
 WAND_INVISIBILITY               = nexti()
 WAND_EMPOWERMENT                = nexti()
 
-i = 0
+i = -1
 STAFF_LIGHTNING                 = nexti()
 STAFF_FIRE                      = nexti()
 STAFF_POISON                    = nexti()
@@ -299,7 +309,7 @@ STAFF_HEALING                   = nexti()
 STAFF_HASTE                     = nexti()
 STAFF_PROTECTION                = nexti()
 
-i = 0
+i = -1
 RING_CLAIRVOYANCE               = nexti()
 RING_STEALTH                    = nexti()
 RING_REGENERATION               = nexti()
@@ -309,7 +319,7 @@ RING_AWARENESS                  = nexti()
 RING_WISDOM                     = nexti()
 RING_REAPING                    = nexti()
 
-i = 0
+i = -1
 CHARM_HEALTH                    = nexti()
 CHARM_PROTECTION                = nexti()
 CHARM_HASTE                     = nexti()
@@ -323,7 +333,7 @@ CHARM_TELEPORTATION             = nexti()
 CHARM_RECHARGING                = nexti()
 CHARM_NEGATION                  = nexti()
 
-i = 0
+i = -1
 SCROLL_ENCHANTING               = nexti()
 SCROLL_IDENTIFY                 = nexti()
 SCROLL_TELEPORT                 = nexti()
@@ -343,7 +353,7 @@ SCROLL_SUMMON_MONSTER           = nexti()
 -- item runics
 UNKNOWN_RUNIC                   = -1
 
-i = 0
+i = -1
 W_SPEED                         = nexti()
 W_QUIETUS                       = nexti()
 W_PARALYSIS                     = nexti()
@@ -355,7 +365,7 @@ W_SLAYING                       = nexti()
 W_MERCY                         = nexti()
 W_PLENTY                        = nexti()
 
-i = 0
+i = -1
 A_MULTIPLICITY                  = nexti()
 A_MUTUALITY                     = nexti()
 A_ABSORPTION                    = nexti()
