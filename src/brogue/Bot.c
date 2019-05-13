@@ -12,6 +12,8 @@ char *botScript = "";
 boolean botControl = false;
 
 static short **workGrid = NULL;
+static pcell psnap[DCOLS][DROWS]; // pmap snapshot
+static short snapValid = -1;
 
 
     // Core functions for interfacing with Brogue
@@ -37,6 +39,11 @@ static void botAbort(char *s) {
     dialogAlert(s);
 }
 // And see resetBot, at the bottom of this file.
+
+void magicMapped() {
+    memcpy(psnap, pmap, sizeof(pmap));
+    snapValid = rogue.depthLevel;
+}
 
 // The following two functions are taken from lua.c in the Lua 5.3 source
 // (would be nice to have them built-in...!)
@@ -276,9 +283,18 @@ static int l_getworld(lua_State *L) {
     pcell *cell;
     int j;
     for (int i=1; i <= DCOLS*DROWS; ++i) {
-        if (!playerCanSee((i-1) / DROWS, (i-1) % DROWS)) continue;
-        j = 2;
-        cell = &pmap[0][i-1];
+        short x = (i-1) / DROWS, y = (i-1) % DROWS;
+
+        // check whether we have magic map info available
+        if (snapValid == rogue.depthLevel && !(pmap[x][y].flags & DISCOVERED) && (pmap[x][y].flags & MAGIC_MAPPED)) {
+            cell = &psnap[x][y];
+        } else if (!playerCanSee(x, y)) {
+            continue;
+        } else {
+            cell = &pmap[x][y];
+        }
+
+        j = 2; // Lua stack index of table we will push to
 
         for (int l=0; l < 4; ++l) {
             lua_pushinteger(L, hideSecrets(cell->layers[l]));
@@ -294,6 +310,8 @@ static int l_getworld(lua_State *L) {
     lua_setfield(L, 1, "gas");
     lua_setfield(L, 1, "liquid");
     lua_setfield(L, 1, "dungeon");
+
+    if (snapValid == rogue.depthLevel) snapValid = -1;
     return 1;
 }
 

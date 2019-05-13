@@ -6622,6 +6622,7 @@ void readScroll(item *theItem) {
                 }
             }
             colorFlash(&magicMapFlashColor, 0, MAGIC_MAPPED, 15, DCOLS + DROWS, player.xLoc, player.yLoc);
+            magicMapped();
             break;
         case SCROLL_AGGRAVATE_MONSTER:
             aggravateMonsters(DCOLS + DROWS, player.xLoc, player.yLoc, &gray);

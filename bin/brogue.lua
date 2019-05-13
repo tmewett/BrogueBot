@@ -88,7 +88,18 @@ function pushevents()
         world[attr] = world[attr] or {}
         for i, x in pairs(t) do
             world[attr][i] = x
-            world.lastseen[i] = rogue.turn
+        end
+    end
+
+    -- set lastseen value for magic-mapped cells to -1
+    for cell, fl in pairs(seenworld.flags) do
+        if fl & DISCOVERED == 0 and fl & MAGIC_MAPPED > 0 then
+            world.lastseen[cell] = -1
+            -- we only get info about dungeon and liquid layers
+            world.surface = 0
+            world.gas = 0
+        else
+            world.lastseen[cell] = rogue.turn
         end
     end
 
