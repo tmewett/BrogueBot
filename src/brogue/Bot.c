@@ -93,6 +93,22 @@ static lua_Integer checkCell(lua_State *L, int i) {
     return c;
 }
 
+static enum tileType hideSecrets(enum tileType tt) {
+    char ch = tileCatalog[tt].displayChar;
+    char *desc = tileCatalog[tt].description;
+
+    // weak but general check for secret tiles
+    if (ch == WALL_CHAR && strcmp(desc, "a stone wall") == 0) {
+        return WALL;
+    } else if (ch == FLOOR_CHAR && strcmp(desc, "the ground") == 0) {
+        return FLOOR;
+    } else if (ch == 0 && strcmp(desc, tileCatalog[SHALLOW_WATER].description) == 0) {
+        return SHALLOW_WATER;
+    } else {
+        return tt;
+    }
+}
+
 // push an item table onto the Lua stack
 static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
     lua_newtable(L);
@@ -265,7 +281,7 @@ static int l_getworld(lua_State *L) {
         cell = &pmap[0][i-1];
 
         for (int l=0; l < 4; ++l) {
-            lua_pushinteger(L, cell->layers[l]);
+            lua_pushinteger(L, hideSecrets(cell->layers[l]));
             lua_seti(L, j++, i);
         }
 
