@@ -380,11 +380,6 @@ static void tcod_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput,
             return;
         }
 
-        if (botControl) {
-            nextBotEvent(returnEvent);
-            return;
-        }
-
         tryAgain = false;
         
         if (bufferedKey.vk != TCODK_NONE) {
@@ -444,6 +439,11 @@ static void tcod_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput,
         #else
         key = TCOD_console_check_for_keypress(TCOD_KEY_PRESSED);
         #endif
+
+        if (botControl) {
+            nextBotEvent(returnEvent);
+            return;
+        }
 
         rewriteKey(&key, textInput);
         if (processKeystroke(key, returnEvent, textInput)) {
