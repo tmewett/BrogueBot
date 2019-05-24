@@ -1,3 +1,5 @@
+#define BROGUEBOT_VERSION_STRING "1.0-rc1"
+
 extern char *botScript;
 extern boolean botControl;
 

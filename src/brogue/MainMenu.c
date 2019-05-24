@@ -46,13 +46,14 @@ void drawMenuFlames(signed short flames[COLS][(ROWS + MENU_FLAME_ROW_PADDING)][3
     color tempColor = {0};
     const color *maskColor = &black;
     char dchar;
+    char verstr[] = BROGUE_VERSION_STRING "-bot" BROGUEBOT_VERSION_STRING;
     
-    versionStringLength = strLenWithoutEscapes(BROGUE_VERSION_STRING);
+    versionStringLength = strLenWithoutEscapes(verstr);
     
     for (j=0; j<ROWS; j++) {
         for (i=0; i<COLS; i++) {
             if (j == ROWS - 1 && i >= COLS - versionStringLength) {
-                dchar = BROGUE_VERSION_STRING[i - (COLS - versionStringLength)];
+                dchar = verstr[i - (COLS - versionStringLength)];
             } else {
                 dchar = ' ';
             }

@@ -54,7 +54,7 @@ static void loadFont(int detectSize)
     sprintf(font, "fonts/font-%i.png", brogueFontSize);
     
     TCOD_console_set_custom_font(font, (TCOD_FONT_TYPE_GREYSCALE | TCOD_FONT_LAYOUT_ASCII_INROW), 0, 0);
-    TCOD_console_init_root(COLS, ROWS, "Brogue", false, renderer);
+    TCOD_console_init_root(COLS, ROWS, "BrogueBot", false, renderer);
 
     TCOD_console_map_ascii_codes_to_font(0, 255, 0, 0);
     TCOD_console_set_keyboard_repeat(175, 30);
