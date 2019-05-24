@@ -351,8 +351,6 @@ SCROLL_SUMMON_MONSTER           = nexti()
 
 
 -- item runics
-UNKNOWN_RUNIC                   = -1
-
 i = -1
 W_SPEED                         = nexti()
 W_QUIETUS                       = nexti()

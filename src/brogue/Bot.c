@@ -5,7 +5,6 @@
 #include "IncludeGlobals.h"
 
 #define QUEUE_LEN 16
-#define UNKNOWN_RUNIC -1
 
 static lua_State *L = NULL;
 char *botScript = "";
@@ -139,20 +138,23 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
             lua_pushinteger(L, it->strengthRequired);
             lua_setfield(L, -2, "strength");
 
-            if (it->flags & ITEM_RUNIC) {
+            if (flags & ITEM_RUNIC) {
                 // only give the info about the runic that the player knows
-                if ((it->flags & (ITEM_IDENTIFIED | ITEM_RUNIC_HINTED))
-                    && !(it->flags & ITEM_RUNIC_IDENTIFIED)) {
-                    lua_pushinteger(L, UNKNOWN_RUNIC);
+                if ((flags & (ITEM_IDENTIFIED | ITEM_RUNIC_HINTED))
+                    && !(flags & ITEM_RUNIC_IDENTIFIED)) {
+                    lua_pushboolean(L, true);
                     lua_setfield(L, -2, "runic");
-                } else if ((it->flags & ITEM_RUNIC_IDENTIFIED)) {
+                } else if ((flags & ITEM_RUNIC_IDENTIFIED)) {
                     lua_pushinteger(L, it->enchant2);
                     lua_setfield(L, -2, "runic");
-                } else {
-                    // if player has no idea about the runic, tell the bot there is none
-                    flags &= ~ITEM_RUNIC;
                 }
+            } else if (flags & ITEM_IDENTIFIED) {
+                // we know there is no runic
+                lua_pushboolean(L, false);
+                lua_setfield(L, -2, "runic");
             }
+            // don't let the bot see the runic flag
+            flags &= ~ITEM_RUNIC;
         }
 
         if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
