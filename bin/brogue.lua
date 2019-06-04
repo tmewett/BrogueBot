@@ -2,13 +2,13 @@ require 'definitions'
 
 levels = {}
 
-function coords(cell)
+function tocoords(cell)
     local cell = cell - 1
     -- y is inner, x is outer
     return cell // DROWS + 1, cell % DROWS + 1
 end
 
-function cell(x, y)
+function tocell(x, y)
     return (x-1) * DROWS + y
 end
 
@@ -25,12 +25,23 @@ function isinworld(cell)
     return cell >= 1 and cell <= DROWS*DCOLS and cell
 end
 
--- returns a truthy value if we can move diagonally between two adjacent cells, false otherwise
-function diagonalblocked(cell1, cell2)
-    local x1,y1 = coords(cell1)
-    local x2,y2 = coords(cell2)
-    return hastileflag(cell(x1,y2), T_OBSTRUCTS_DIAGONAL_MOVEMENT)
-        or hastileflag(cell(x2,y1), T_OBSTRUCTS_DIAGONAL_MOVEMENT)
+function discovered(cell)
+    return world.lastseen[cell] and true
+end
+
+-- returns a truthy value if we know we are unobstructed when stepping in direction dir from cell
+function canstepto(cell, dir)
+    local step = cell + celldiffs[dir]
+    if not discovered(step) or hastileflag(step, T_OBSTRUCTS_PASSABILITY) then return false end
+
+    -- now we know step is discovered and unobstructed
+    local x1,y1 = tocoords(cell)
+    local x2,y2 = tocoords(step)
+    if x1==x2 or y1==y2 then return true end
+
+    local d1, d2 = tocell(x1,y2), tocell(x2,y1)
+    return discovered(d1) and discovered(d2) and not
+        (hastileflag(d1, T_OBSTRUCTS_DIAGONAL_MOVEMENT) or hastileflag(d2, T_OBSTRUCTS_DIAGONAL_MOVEMENT))
 end
 
 celldiffs = {
@@ -59,7 +70,7 @@ function nextstep(cell, distmap)
 
     local sdist, sdir = UNREACHABLE, nil
     for dir, ncell in pairs(neighborhood(cell)) do
-        if distmap[ncell] < sdist and not diagonalblocked(cell, ncell) then
+        if distmap[ncell] < sdist and canstepto(cell, dir) then
             sdir = dir
             sdist = distmap[ncell]
         end
