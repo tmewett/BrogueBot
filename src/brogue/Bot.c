@@ -164,6 +164,14 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
             lua_setfield(L, -2, "enchant");
         }
 
+        // these values are assuming the item is +0 with str req equal to the player's str
+        if (c==WEAPON) {
+            lua_pushinteger(L, it->damage.lowerBound);
+            lua_setfield(L, -2, "mindamage");
+            lua_pushinteger(L, it->damage.upperBound);
+            lua_setfield(L, -2, "maxdamage");
+        }
+
         if (c==ARMOR) {
             lua_pushinteger(L, it->armor);
             lua_setfield(L, -2, "armor");
@@ -172,7 +180,6 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
         lua_pushinteger(L, flags);
         lua_setfield(L, -2, "flags");
 
-        // TODO damage
     } else {
         lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
         lua_setfield(L, -2, "cell");
