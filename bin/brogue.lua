@@ -102,8 +102,8 @@ function pushevents()
         end
     end
 
-    -- set lastseen value for magic-mapped cells to -1
     for cell, fl in pairs(seenworld.flags) do
+        -- set lastseen value for magic-mapped cells to -1
         if fl & DISCOVERED == 0 and fl & MAGIC_MAPPED > 0 then
             world.lastseen[cell] = -1
             -- we only get info about dungeon and liquid layers
@@ -111,6 +111,13 @@ function pushevents()
             world.gas = 0
         else
             world.lastseen[cell] = rogue.turn
+        end
+
+        if not world.downstairs and fl & HAS_DOWN_STAIRS > 0 then
+            world.downstairs = cell
+        end
+        if not world.upstairs and fl & HAS_UP_STAIRS > 0 then
+            world.upstairs = cell
         end
     end
 
