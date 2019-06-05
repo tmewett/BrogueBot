@@ -166,6 +166,17 @@ MA_NEVER_VORPAL_ENEMY           = (MA_KAMIKAZE)
 MA_NEVER_MUTATED                = (MA_KAMIKAZE)
 
 
+-- monster bookkeeping flags. only a few are actually given
+MB_TELEPATHICALLY_REVEALED  = Fl(1)    -- player can magically see monster and adjacent cells
+MB_CAPTIVE                  = Fl(8)    -- monster is all tied up
+MB_SEIZED                   = Fl(9)    -- monster is being held
+MB_SEIZING                  = Fl(10)   -- monster is holding another creature immobile
+MB_SUBMERGED                = Fl(11)   -- monster is currently submerged and hence invisible until it attacks
+MB_ABSORBING                = Fl(15)   -- currently learning a skill by absorbing an enemy corpse
+MB_HAS_SOUL                 = Fl(21)   -- slaying the monster will count toward weapon auto-ID
+MB_ALREADY_SEEN             = Fl(22)   -- seeing this monster won't interrupt exploration
+
+
 -- monster states
 i = -1
 MONSTER_SLEEPING                = nexti()

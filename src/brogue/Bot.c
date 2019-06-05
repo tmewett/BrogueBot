@@ -225,6 +225,10 @@ static void pushCreature(lua_State *L, creature *cr) {
     lua_setfield(L, -2, "maxdamage");
     lua_pushinteger(L, cr->info.flags);
     lua_setfield(L, -2, "flags");
+    lua_pushinteger(L, cr->bookkeepingFlags &
+        (MB_TELEPATHICALLY_REVEALED | MB_CAPTIVE | MB_SEIZED | MB_SEIZING | MB_SUBMERGED
+        | MB_ABSORBING | MB_HAS_SOUL | MB_ALREADY_SEEN));
+    lua_setfield(L, -2, "bookflags");
     lua_pushinteger(L, cr->info.abilityFlags);
     lua_setfield(L, -2, "abilities");
 
