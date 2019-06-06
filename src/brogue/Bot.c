@@ -1,3 +1,4 @@
+#include <math.h>
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -137,6 +138,8 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
         if (c==WEAPON || c==ARMOR) {
             lua_pushinteger(L, it->strengthRequired);
             lua_setfield(L, -2, "strength");
+            lua_pushinteger(L, strengthModifier(it));
+            lua_setfield(L, -2, "strengthmod");
 
             if (flags & ITEM_RUNIC) {
                 // only give the info about the runic that the player knows
@@ -157,23 +160,44 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
             flags &= ~ITEM_RUNIC;
         }
 
-        if (c==WEAPON || c==ARMOR || c==STAFF || c==WAND || c==CHARM || c==RING) {
-            lua_pushinteger(L, it->charges);
-            lua_setfield(L, -2, "charges");
-            lua_pushinteger(L, it->enchant1);
-            lua_setfield(L, -2, "enchant");
+        if (flags & ITEM_IDENTIFIED) {
+            if (c==WEAPON || c==ARMOR || c==STAFF || c==CHARM || c==RING) {
+                lua_pushinteger(L, it->enchant1);
+                lua_setfield(L, -2, "enchant");
+                lua_pushinteger(L, netEnchant(it));
+                lua_setfield(L, -2, "netenchant");
+            }
         }
 
-        // these values are assuming the item is +0 with str req equal to the player's str
         if (c==WEAPON) {
+            // these values are assuming the item is +0 with str req equal to the player's str
             lua_pushinteger(L, it->damage.lowerBound);
-            lua_setfield(L, -2, "mindamage");
+            lua_setfield(L, -2, "minbasedamage");
             lua_pushinteger(L, it->damage.upperBound);
+            lua_setfield(L, -2, "maxbasedamage");
+
+            short power = flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it);
+            short dmgfactor = pow(WEAPON_ENCHANT_DAMAGE_FACTOR, power),
+                  accfactor = pow(WEAPON_ENCHANT_ACCURACY_FACTOR, power);
+
+            lua_pushinteger(L, it->damage.lowerBound * dmgfactor);
+            lua_setfield(L, -2, "mindamage");
+            lua_pushinteger(L, it->damage.upperBound * dmgfactor);
             lua_setfield(L, -2, "maxdamage");
+            lua_pushinteger(L, player.info.accuracy * accfactor);
+            lua_setfield(L, -2, "accuracy");
         }
 
         if (c==ARMOR) {
-            lua_pushinteger(L, it->armor);
+            short armor = it->armor;
+            lua_pushinteger(L, armor);
+            lua_setfield(L, -2, "basearmor");
+
+            armor += 10 * (flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it));
+            if (armor < 0) armor = 0;
+            armor /= 10;
+
+            lua_pushinteger(L, armor);
             lua_setfield(L, -2, "armor");
         }
 
