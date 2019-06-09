@@ -9,7 +9,10 @@
 
 static lua_State *L = NULL;
 char *botScript = "";
+// whether to hijack user input. set by resetBot based on botMode, unset on death
 boolean botControl = false;
+// 0=none 1=control 2=report. set by command line flags
+short botMode = 0;
 
 static short **workGrid = NULL;
 static pcell psnap[DCOLS][DROWS]; // pmap snapshot
@@ -86,6 +89,15 @@ void nextBotEvent(rogueEvent *returnEvent) {
             // the queue is no longer empty, so re-run
             nextBotEvent(returnEvent);
         }
+    }
+}
+
+void botReport() {
+    lua_getglobal(L, "pushevents");
+    if (docall(L, 0, 0)) {
+        // there's an error object on stack; print it to message log
+        message(luaL_checkstring(L, -1), false);
+        botAbort("Error occured in Lua interpreter. Stopping bot. See message log for details.");
     }
 }
 
@@ -513,5 +525,8 @@ void resetBot(char *filename) {
         return;
     }
 
-    rogue.autoPlayingLevel = true;
+    if (botMode == 1) {
+        botControl = true;
+        rogue.autoPlayingLevel = true;
+    }
 }

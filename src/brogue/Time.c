@@ -2094,7 +2094,11 @@ void playerTurnEnded() {
     creature *monst, *monst2, *nextMonst;
     boolean fastForward = false;
     short oldRNG;
-    
+
+    if (botMode == 2) {
+        botReport();
+    }
+
     brogueAssert(rogue.RNG == RNG_SUBSTANTIVE);
     
     handleXPXP();

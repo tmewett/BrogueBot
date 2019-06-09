@@ -756,8 +756,7 @@ void mainBrogueJunction() {
                 initializeRogue(rogue.nextGameSeed);
                 startLevel(rogue.depthLevel, 1); // descending into level 1
 
-                if (strlen(botScript) > 0) {
-                    botControl = true;
+                if (botMode > 0) {
                     resetBot(botScript);
                 }
 
@@ -807,7 +806,11 @@ void mainBrogueJunction() {
                         rogue.playbackPaused = true;
                         displayAnnotation(); // in case there's an annotation for turn 0
                     }
-                    
+
+                    if (botMode == 2) {
+                        resetBot(botScript);
+                    }
+
                     while(!rogue.gameHasEnded && rogue.playbackMode) {
                         if (rogue.playbackPaused) {
                             rogue.playbackPaused = false;

@@ -49,6 +49,7 @@ static void printCommandlineHelp() {
     "-o filename[.broguesave]   open a save file (extension optional)\n"
     "-v recording[.broguerec]   view a recording (extension optional)\n"
     "-b <script file>           use bot script to play game\n"
+    "-R <script file>           use bot script to process information each turn\n"
 #ifdef BROGUE_TCOD
     "--size N                   starts the game at font size N (1 to 13)\n"
     "--noteye-hack              ignore SDL-specific application state checks\n"
@@ -87,6 +88,15 @@ int main(int argc, char *argv[])
         if (strcmp(argv[i], "-b") == 0) {
             if (i + 1 < argc) {
                 botScript = argv[++i];
+                botMode = 1;
+                continue;
+            }
+        }
+
+        if (strcmp(argv[i], "-R") == 0) {
+            if (i + 1 < argc) {
+                botScript = argv[++i];
+                botMode = 2;
                 continue;
             }
         }
