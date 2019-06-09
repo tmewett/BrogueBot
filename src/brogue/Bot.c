@@ -92,6 +92,10 @@ void nextBotEvent(rogueEvent *returnEvent) {
 
     // Lua API helper functions
 
+#define ALLOWED_MONST_BOOKFLAGS \
+    (MB_TELEPATHICALLY_REVEALED | MB_CAPTIVE | MB_SEIZED | MB_SEIZING | MB_SUBMERGED \
+    | MB_ABSORBING | MB_HAS_SOUL | MB_ALREADY_SEEN)
+
 static lua_Integer checkCell(lua_State *L, int i) {
     lua_Integer c = luaL_checkinteger(L, i) - 1;
     if (c < 0 || c >= DROWS*DCOLS) {
@@ -223,36 +227,62 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
     }
 }
 
+static short creatureAccuracy(creature *cr) {
+    if (cr == &player && rogue.weapon) {
+        short ench = rogue.weapon->flags & ITEM_IDENTIFIED ?
+            netEnchant(rogue.weapon) : strengthModifier(rogue.weapon);
+        return player.info.accuracy *
+            pow(WEAPON_ENCHANT_ACCURACY_FACTOR, ench + FLOAT_FUDGE);
+    } else {
+        return monsterAccuracyAdjusted(cr);
+    }
+}
+
 // push a creature table onto the Lua stack
 static void pushCreature(lua_State *L, creature *cr) {
     lua_newtable(L);
 
     lua_pushinteger(L, cr->xLoc * DROWS + cr->yLoc + 1);
     lua_setfield(L, -2, "cell");
-    lua_pushinteger(L, cr->currentHP);
-    lua_setfield(L, -2, "hp");
     lua_pushinteger(L, cr->creatureState);
     lua_setfield(L, -2, "state");
+    lua_pushinteger(L, cr->info.flags);
+    lua_setfield(L, -2, "flags");
+    lua_pushinteger(L, cr->bookkeepingFlags & ALLOWED_MONST_BOOKFLAGS);
+    lua_setfield(L, -2, "bookflags");
+
+    lua_pushinteger(L, cr->currentHP);
+    lua_setfield(L, -2, "hp");
     lua_pushinteger(L, cr->info.maxHP);
     lua_setfield(L, -2, "maxhp");
+    lua_pushinteger(L, cr->info.accuracy);
+    lua_setfield(L, -2, "baseaccuracy");
+    lua_pushinteger(L, creatureAccuracy(cr));
+    lua_setfield(L, -2, "accuracy");
+    lua_pushinteger(L, monsterDefenseAdjusted(cr));
+    lua_setfield(L, -2, "defense");
+    lua_pushinteger(L, cr->attackSpeed);
+    lua_setfield(L, -2, "attackticks");
+    lua_pushinteger(L, cr->info.damage.lowerBound * monsterDamageAdjustmentAmount(cr));
+    lua_setfield(L, -2, "mindamage");
+    lua_pushinteger(L, cr->info.damage.upperBound * monsterDamageAdjustmentAmount(cr));
+    lua_setfield(L, -2, "maxdamage");
+    if (cr != &player) {
+        // for the player, these are the same as the computed values
+        lua_pushinteger(L, cr->info.defense);
+        lua_setfield(L, -2, "basedefense");
+        lua_pushinteger(L, cr->info.damage.lowerBound);
+        lua_setfield(L, -2, "minbasedamage");
+        lua_pushinteger(L, cr->info.damage.upperBound);
+        lua_setfield(L, -2, "maxbasedamage");
+    }
+
     lua_pushinteger(L, cr->weaknessAmount);
     lua_setfield(L, -2, "weakness");
     lua_pushinteger(L, cr->poisonAmount);
     lua_setfield(L, -2, "poison");
     lua_pushinteger(L, cr->movementSpeed);
-    lua_setfield(L, -2, "movespeed");
-    lua_pushinteger(L, cr->attackSpeed);
-    lua_setfield(L, -2, "attackspeed");
-    lua_pushinteger(L, cr->info.damage.lowerBound);
-    lua_setfield(L, -2, "mindamage");
-    lua_pushinteger(L, cr->info.damage.upperBound);
-    lua_setfield(L, -2, "maxdamage");
-    lua_pushinteger(L, cr->info.flags);
-    lua_setfield(L, -2, "flags");
-    lua_pushinteger(L, cr->bookkeepingFlags &
-        (MB_TELEPATHICALLY_REVEALED | MB_CAPTIVE | MB_SEIZED | MB_SEIZING | MB_SUBMERGED
-        | MB_ABSORBING | MB_HAS_SOUL | MB_ALREADY_SEEN));
-    lua_setfield(L, -2, "bookflags");
+    lua_setfield(L, -2, "moveticks");
     lua_pushinteger(L, cr->info.abilityFlags);
     lua_setfield(L, -2, "abilities");
 
