@@ -2095,10 +2095,6 @@ void playerTurnEnded() {
     boolean fastForward = false;
     short oldRNG;
 
-    if (botMode == 2) {
-        botReport();
-    }
-
     brogueAssert(rogue.RNG == RNG_SUBSTANTIVE);
     
     handleXPXP();
@@ -2459,6 +2455,10 @@ void playerTurnEnded() {
     if (rogue.flareCount > 0) {
         animateFlares(rogue.flares, rogue.flareCount);
         rogue.flareCount = 0;
+    }
+
+    if (botMode == 2) {
+        botReport();
     }
 }
 
