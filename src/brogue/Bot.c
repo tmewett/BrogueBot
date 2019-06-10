@@ -207,14 +207,13 @@ static void pushItem(lua_State *L, item *it, boolean inPack, boolean visible) {
         if (c==ARMOR) {
             short armor = it->armor;
             lua_pushinteger(L, armor);
-            lua_setfield(L, -2, "basearmor");
+            lua_setfield(L, -2, "basedefense");
 
             armor += 10 * (flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it));
             if (armor < 0) armor = 0;
-            armor /= 10;
 
             lua_pushinteger(L, armor);
-            lua_setfield(L, -2, "armor");
+            lua_setfield(L, -2, "defense");
         }
 
         lua_pushinteger(L, flags);
@@ -250,6 +249,19 @@ static short creatureAccuracy(creature *cr) {
     }
 }
 
+static short playerKnownDefense() {
+    // referring to monsterDetails and recalculateEquipmentBonuses
+    if (!rogue.armor || (rogue.armor->flags & ITEM_IDENTIFIED)) {
+        return player.info.defense;
+    } else {
+        short def =
+            (armorTable[rogue.armor->kind].range.upperBound + armorTable[rogue.armor->kind].range.lowerBound) / 2 +
+            10 * (strengthModifier(rogue.armor) - player.status[STATUS_DONNING] + FLOAT_FUDGE);
+        if (def < 0) def = 0;
+        return def;
+    }
+}
+
 // push a creature table onto the Lua stack
 static void pushCreature(lua_State *L, creature *cr) {
     lua_newtable(L);
@@ -267,27 +279,45 @@ static void pushCreature(lua_State *L, creature *cr) {
     lua_setfield(L, -2, "hp");
     lua_pushinteger(L, cr->info.maxHP);
     lua_setfield(L, -2, "maxhp");
-    lua_pushinteger(L, cr->info.accuracy);
-    lua_setfield(L, -2, "baseaccuracy");
     lua_pushinteger(L, creatureAccuracy(cr));
     lua_setfield(L, -2, "accuracy");
-    lua_pushinteger(L, monsterDefenseAdjusted(cr));
-    lua_setfield(L, -2, "defense");
     lua_pushinteger(L, cr->attackSpeed);
     lua_setfield(L, -2, "attackticks");
-    lua_pushinteger(L, cr->info.damage.lowerBound * monsterDamageAdjustmentAmount(cr));
-    lua_setfield(L, -2, "mindamage");
-    lua_pushinteger(L, cr->info.damage.upperBound * monsterDamageAdjustmentAmount(cr));
-    lua_setfield(L, -2, "maxdamage");
-    if (cr != &player) {
-        // for the player, these are the same as the computed values
-        lua_pushinteger(L, cr->info.defense);
-        lua_setfield(L, -2, "basedefense");
+
+    short mindmg, maxdmg, def;
+
+    if (cr == &player) {
+        if (!rogue.weapon || (rogue.weapon->flags & ITEM_IDENTIFIED)) {
+            mindmg = cr->info.damage.lowerBound;
+            maxdmg = cr->info.damage.upperBound;
+        } else {
+            // thought we should consider str modifiers here but monsterDetails doesn't...
+            mindmg = rogue.weapon->damage.lowerBound;
+            maxdmg = rogue.weapon->damage.upperBound;
+        }
+        def = playerKnownDefense();
+    } else {
+        mindmg = cr->info.damage.lowerBound * monsterDamageAdjustmentAmount(cr);
+        maxdmg = cr->info.damage.upperBound * monsterDamageAdjustmentAmount(cr);
+        def = monsterDefenseAdjusted(cr);
+
+        // base stats, before str modifiers. not sure if these will stay
         lua_pushinteger(L, cr->info.damage.lowerBound);
         lua_setfield(L, -2, "minbasedamage");
         lua_pushinteger(L, cr->info.damage.upperBound);
         lua_setfield(L, -2, "maxbasedamage");
+        lua_pushinteger(L, cr->info.defense);
+        lua_setfield(L, -2, "basedefense");
+        lua_pushinteger(L, cr->info.accuracy);
+        lua_setfield(L, -2, "baseaccuracy");
     }
+
+    lua_pushinteger(L, mindmg);
+    lua_setfield(L, -2, "mindamage");
+    lua_pushinteger(L, maxdmg);
+    lua_setfield(L, -2, "maxdamage");
+    lua_pushinteger(L, def);
+    lua_setfield(L, -2, "defense");
 
     lua_pushinteger(L, cr->weaknessAmount);
     lua_setfield(L, -2, "weakness");
