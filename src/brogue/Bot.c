@@ -211,6 +211,9 @@ static void pushItem(lua_State *L, item *it) {
             lua_setfield(L, -2, "maxdamage");
             lua_pushinteger(L, player.info.accuracy * accfactor);
             lua_setfield(L, -2, "accuracy");
+
+            lua_pushinteger(L, flags & ITEM_IDENTIFIED ? 0 : it->charges);
+            lua_setfield(L, -2, "killstoreveal");
         }
 
         if (c==ARMOR) {
@@ -223,6 +226,36 @@ static void pushItem(lua_State *L, item *it) {
 
             lua_pushinteger(L, armor);
             lua_setfield(L, -2, "defense");
+        }
+
+        if (c==ARMOR || c==RING) {
+            lua_pushinteger(L, flags & ITEM_IDENTIFIED ? 0 : it->charges);
+            lua_setfield(L, -2, "turnstoreveal");
+        }
+
+        if (c==STAFF) {
+            if (flags & (ITEM_MAX_CHARGES_KNOWN | ITEM_IDENTIFIED)) {
+                lua_pushinteger(L, it->enchant1);
+                lua_setfield(L, -2, "maxcharges");
+                if (flags & ITEM_IDENTIFIED) {
+                    lua_pushinteger(L, it->charges);
+                    lua_setfield(L, -2, "charges");
+                }
+            }
+        }
+
+        if (c==WAND) {
+            lua_pushinteger(L, it->enchant2);
+            lua_setfield(L, -2, "timesused");
+            if (flags & (ITEM_MAX_CHARGES_KNOWN | ITEM_IDENTIFIED)) {
+                lua_pushinteger(L, it->charges);
+                lua_setfield(L, -2, "charges");
+            }
+        }
+
+        if (c==CHARM) {
+            lua_pushinteger(L, it->charges);
+            lua_setfield(L, -2, "turnstocharge");
         }
 
         lua_pushinteger(L, flags);
