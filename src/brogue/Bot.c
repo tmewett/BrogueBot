@@ -269,12 +269,14 @@ static void pushItem(lua_State *L, item *it) {
         itemTable *table = tableForItemCategory(c, NULL);
         if (table != NULL) {
             table = &table[it->kind];
+
+            lua_pushstring(L, table->flavor);
+            lua_setfield(L, -2, "flavor");
+
             if (table->identified) {
                 lua_pushinteger(L, it->kind);
-            } else {
-                lua_pushstring(L, table->flavor);
+                lua_setfield(L, -2, "kind");
             }
-            lua_setfield(L, -2, "kind");
         }
     }
 }
@@ -400,6 +402,23 @@ static int l_tileflags(lua_State *L) {
         luaL_error(L, "invalid tile type");
     }
     lua_pushinteger(L, tileCatalog[t].flags);
+    return 1;
+}
+
+static int l_iskindknown(lua_State *L) {
+    enum itemCategory cat = luaL_checkinteger(L, 1);
+    short kind = luaL_checkinteger(L, 2);
+
+    short nkinds;
+    itemTable *table = tableForItemCategory(cat, &nkinds);
+    if (!table) {
+        // invalid category (gold, lumenstone or amulet); just return true
+        lua_pushboolean(L, true);
+        return 1;
+    }
+    if (kind >= nkinds) luaL_error(L, "invalid item kind for category");
+
+    lua_pushboolean(L, table[kind].identified);
     return 1;
 }
 
@@ -563,6 +582,7 @@ static luaL_Reg reg[] = {
     {"message", l_message},
     {"presskeys", l_presskeys},
     {"tileflags", l_tileflags},
+    {"iskindknown", l_iskindknown},
     {"stepto", l_stepto},
     {"getworld", l_getworld},
     {"getpack", l_getpack},
