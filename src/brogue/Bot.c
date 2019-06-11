@@ -157,6 +157,8 @@ static void pushItem(lua_State *L, item *it) {
         enum itemCategory c = it->category;
         enum itemFlags flags = it->flags;
 
+        if (!(flags & (ITEM_IDENTIFIED | ITEM_EQUIPPED))) flags &= ~ITEM_CURSED;
+
         if (c==WEAPON || c==ARMOR) {
             lua_pushinteger(L, it->strengthRequired);
             lua_setfield(L, -2, "strength");
@@ -172,14 +174,15 @@ static void pushItem(lua_State *L, item *it) {
                 } else if ((flags & ITEM_RUNIC_IDENTIFIED)) {
                     lua_pushinteger(L, it->enchant2);
                     lua_setfield(L, -2, "runic");
+                } else {
+                    // we have no idea about the runic; mask out the flag
+                    flags &= ~ITEM_RUNIC;
                 }
             } else if (flags & ITEM_IDENTIFIED) {
                 // we know there is no runic
                 lua_pushboolean(L, false);
                 lua_setfield(L, -2, "runic");
             }
-            // don't let the bot see the runic flag
-            flags &= ~ITEM_RUNIC;
         }
 
         if (flags & ITEM_IDENTIFIED) {
