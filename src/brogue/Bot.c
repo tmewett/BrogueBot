@@ -230,13 +230,16 @@ static void pushItem(lua_State *L, item *it) {
         lua_pushinteger(L, it->quantity);
         lua_setfield(L, -2, "quantity");
 
-        itemTable *table = &tableForItemCategory(c, NULL)[it->kind];
-        if (table->identified) {
-            lua_pushinteger(L, it->kind);
-        } else {
-            lua_pushstring(L, table->flavor);
+        itemTable *table = tableForItemCategory(c, NULL);
+        if (table != NULL) {
+            table = &table[it->kind];
+            if (table->identified) {
+                lua_pushinteger(L, it->kind);
+            } else {
+                lua_pushstring(L, table->flavor);
+            }
+            lua_setfield(L, -2, "kind");
         }
-        lua_setfield(L, -2, "kind");
     }
 }
 
