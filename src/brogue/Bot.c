@@ -160,7 +160,7 @@ static void pushItem(lua_State *L, item *it) {
         if (c==WEAPON || c==ARMOR) {
             lua_pushinteger(L, it->strengthRequired);
             lua_setfield(L, -2, "strength");
-            lua_pushinteger(L, strengthModifier(it));
+            lua_pushnumber(L, strengthModifier(it));
             lua_setfield(L, -2, "strengthmod");
 
             if (flags & ITEM_RUNIC) {
@@ -186,7 +186,7 @@ static void pushItem(lua_State *L, item *it) {
             if (c==WEAPON || c==ARMOR || c==STAFF || c==CHARM || c==RING) {
                 lua_pushinteger(L, it->enchant1);
                 lua_setfield(L, -2, "enchant");
-                lua_pushinteger(L, netEnchant(it));
+                lua_pushnumber(L, netEnchant(it));
                 lua_setfield(L, -2, "netenchant");
             }
         }
@@ -198,8 +198,8 @@ static void pushItem(lua_State *L, item *it) {
             lua_pushinteger(L, it->damage.upperBound);
             lua_setfield(L, -2, "maxbasedamage");
 
-            short power = flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it);
-            short dmgfactor = pow(WEAPON_ENCHANT_DAMAGE_FACTOR, power),
+            float power = flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it);
+            float dmgfactor = pow(WEAPON_ENCHANT_DAMAGE_FACTOR, power),
                   accfactor = pow(WEAPON_ENCHANT_ACCURACY_FACTOR, power);
 
             lua_pushinteger(L, it->damage.lowerBound * dmgfactor);
