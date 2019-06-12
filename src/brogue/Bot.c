@@ -134,7 +134,7 @@ static enum tileType hideSecrets(enum tileType tt) {
 
 // push an item table onto the Lua stack. the existence of item is assumed to be somehow known.
 static void pushItem(lua_State *L, item *it) {
-    boolean visible = playerCanSee(it->xLoc, it->yLoc), carried = itemIsCarried(it);
+    boolean carried = itemIsCarried(it), visible = carried || playerCanSee(it->xLoc, it->yLoc);
 
     lua_newtable(L);
 
@@ -153,7 +153,7 @@ static void pushItem(lua_State *L, item *it) {
         lua_setfield(L, -2, "cell");
     }
 
-    if (visible || carried) {
+    if (carried || visible && !player.status[STATUS_HALLUCINATING]) {
         enum itemCategory c = it->category;
         enum itemFlags flags = it->flags;
 
@@ -311,6 +311,12 @@ static void pushCreature(lua_State *L, creature *cr) {
 
     lua_pushinteger(L, cr->xLoc * DROWS + cr->yLoc + 1);
     lua_setfield(L, -2, "cell");
+    lua_pushnumber(L, (float) cr->currentHP / cr->info.maxHP);
+    lua_setfield(L, -2, "health");
+
+    // if we're hallucinating, that's all we know about monsters
+    if (cr != &player && player.status[STATUS_HALLUCINATING]) return;
+
     lua_pushinteger(L, cr->creatureState);
     lua_setfield(L, -2, "state");
     lua_pushinteger(L, cr->info.flags);
