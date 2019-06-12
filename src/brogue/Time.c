@@ -2457,7 +2457,7 @@ void playerTurnEnded() {
         rogue.flareCount = 0;
     }
 
-    if (botMode == 2) {
+    if (botMode == 2 && !rogue.playbackFastForward) {
         botReport();
     }
 }
