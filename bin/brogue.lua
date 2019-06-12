@@ -107,8 +107,10 @@ function pushevents()
         if fl & DISCOVERED == 0 and fl & MAGIC_MAPPED > 0 then
             world.lastseen[cell] = -1
             -- we only get info about dungeon and liquid layers
-            world.surface = 0
-            world.gas = 0
+            world.surface[cell] = 0
+            world.gas[cell] = 0
+            -- hide unknown information
+            world.flags[cell] = fl & ~(HAS_MONSTER | HAS_DORMANT_MONSTER | HAS_ITEM | IS_IN_SHADOW)
         else
             world.lastseen[cell] = rogue.turn
         end
