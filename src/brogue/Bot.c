@@ -305,12 +305,25 @@ static short playerKnownDefense() {
     }
 }
 
-// push a creature table onto the Lua stack
+// push a creature table onto the Lua stack. The existence of the creature is assumed to be somehow known.
+/*  seen = not hidden and is either on a visible cell or is revealed (shows up in sidebar)
+    hidden = submerged, invisible not in gas, dormant (can't be directly seen)
+    revealed = entranced, telepathically linked, player telepathic */
 static void pushCreature(lua_State *L, creature *cr) {
     lua_newtable(L);
 
     lua_pushinteger(L, cr->xLoc * DROWS + cr->yLoc + 1);
     lua_setfield(L, -2, "cell");
+
+    // psychic emanation
+    if (!canSeeMonster(cr) && monsterRevealed(cr)) {
+        if (player.status[STATUS_HALLUCINATING]) lua_pushboolean(L, true);
+        else lua_pushstring(L,
+            (cr->info.displayChar >= 'a' && cr->info.displayChar <= 'z') ? "small" : "large");
+        lua_setfield(L, -2, "emanation");
+        return;
+    }
+
     lua_pushnumber(L, (float) cr->currentHP / cr->info.maxHP);
     lua_setfield(L, -2, "health");
 
@@ -520,7 +533,12 @@ static int l_getcreatures(lua_State *L) {
 
     int i = 1;
     for (creature *cr = monsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
-        if (!canSeeMonster(cr)) continue;
+        if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
+        pushCreature(L, cr);
+        lua_seti(L, -2, i++);
+    }
+    for (creature *cr = dormantMonsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
+        if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
         pushCreature(L, cr);
         lua_seti(L, -2, i++);
     }
