@@ -86,10 +86,18 @@ end
 
 function pushevents()
 
-    local pack = getpack()
     rogue = getplayer()
+
+    local pack = getpack()
     rogue.weapon = pack[rogue.weapon]
     rogue.armor = pack[rogue.armor]
+
+    local rings = {pack[rogue.leftring], pack[rogue.rightring]}
+    rogue.rings = {}
+    if rings[1] then rogue.rings[rings[1]] = true end
+    if rings[2] then rogue.rings[rings[2]] = true end
+    rogue.leftring = nil
+    rogue.rightring = nil
 
     local seenworld = getworld()
     world = levels[rogue.depth] or {}

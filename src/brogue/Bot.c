@@ -569,6 +569,16 @@ static int l_getplayer(lua_State *L) {
         lua_pushstring(L, let);
         lua_setfield(L, -2, "armor");
     }
+    if (rogue.ringLeft) {
+        let[0] = rogue.ringLeft->inventoryLetter;
+        lua_pushstring(L, let);
+        lua_setfield(L, -2, "leftring");
+    }
+    if (rogue.ringRight) {
+        let[0] = rogue.ringRight->inventoryLetter;
+        lua_pushstring(L, let);
+        lua_setfield(L, -2, "rightring");
+    }
 
     return 1;
 }
