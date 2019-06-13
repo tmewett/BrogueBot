@@ -559,7 +559,7 @@ static int l_getplayer(lua_State *L) {
 
     lua_pushinteger(L, rogue.depthLevel);
     lua_setfield(L, -2, "depth");
-    lua_pushinteger(L, rogue.playerTurnNumber);
+    lua_pushinteger(L, rogue.absoluteTurnNumber);
     lua_setfield(L, -2, "turn");
     lua_pushinteger(L, rogue.strength);
     lua_setfield(L, -2, "strength");
