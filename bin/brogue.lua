@@ -79,6 +79,27 @@ function nextstep(cell, distmap)
     return sdir
 end
 
+function hitprobability(defender, attacker)
+    attacker = attacker or rogue
+    local deffactor = 0.987
+    local prob = attacker.accuracy * math.pow(deffactor, defender.defense) / 100
+    return math.max(0.0, math.min(1.0, prob))
+end
+
+function averagedamage(cr)
+    return (cr.maxdamage + cr.mindamage) / 2
+end
+
+function expecteddamages(target, attacker)
+    attacker = attacker or rogue
+
+    local avgout = hitprobability(target, attacker) * averagedamage(attacker)
+    local avgin = hitprobability(attacker, target) * averagedamage(target)
+
+    local tickstokill = target.hp / avgout * attacker.attackticks
+    return tickstokill / target.attackticks * avgin
+end
+
 function drop(item)
     if not item.letter then error("cannot interact with an item not in the pack") end
     presskeys("d"..item.letter)
