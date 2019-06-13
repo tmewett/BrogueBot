@@ -330,8 +330,6 @@ static void pushCreature(lua_State *L, creature *cr) {
     // if we're hallucinating, that's all we know about monsters
     if (cr != &player && player.status[STATUS_HALLUCINATING]) return;
 
-    lua_pushinteger(L, cr->creatureState);
-    lua_setfield(L, -2, "state");
     lua_pushinteger(L, cr->info.flags);
     lua_setfield(L, -2, "flags");
     lua_pushinteger(L, cr->bookkeepingFlags & ALLOWED_MONST_BOOKFLAGS);
@@ -387,8 +385,19 @@ static void pushCreature(lua_State *L, creature *cr) {
     lua_setfield(L, -2, "poison");
     lua_pushinteger(L, cr->movementSpeed);
     lua_setfield(L, -2, "moveticks");
-    lua_pushinteger(L, cr->info.abilityFlags);
-    lua_setfield(L, -2, "abilities");
+
+    if (cr != &player) {
+        lua_pushinteger(L, cr->creatureState);
+        lua_setfield(L, -2, "state");
+        lua_pushinteger(L, cr->newPowerCount);
+        lua_setfield(L, -2, "abilityslots");
+        lua_pushinteger(L, cr->info.abilityFlags);
+        lua_setfield(L, -2, "abilities");
+        if (cr->bookkeepingFlags & MB_ABSORBING) {
+            lua_pushinteger(L, cr->corpseAbsorptionCounter);
+            lua_setfield(L, -2, "turnstoabsorb");
+        }
+    }
 
     lua_newtable(L);
     for (int i=1; i <= NUMBER_OF_STATUS_EFFECTS; i++) {
