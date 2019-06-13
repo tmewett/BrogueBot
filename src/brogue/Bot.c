@@ -283,7 +283,7 @@ static void pushItem(lua_State *L, item *it) {
 
 static short creatureAccuracy(creature *cr) {
     if (cr == &player && rogue.weapon) {
-        short ench = rogue.weapon->flags & ITEM_IDENTIFIED ?
+        float ench = rogue.weapon->flags & ITEM_IDENTIFIED ?
             netEnchant(rogue.weapon) : strengthModifier(rogue.weapon);
         return player.info.accuracy *
             pow(WEAPON_ENCHANT_ACCURACY_FACTOR, ench + FLOAT_FUDGE);
