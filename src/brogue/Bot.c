@@ -415,6 +415,14 @@ static int l_presskeys(lua_State *L) {
     return 0;
 }
 
+static int l_clickcell(lua_State *L) {
+    lua_Integer cell = checkCell(L, 1);
+    short sx = mapToWindowX(cell / DROWS), sy = mapToWindowY(cell % DROWS);
+    pushEvent((rogueEvent){MOUSE_DOWN, sx, sy, false, false});
+    pushEvent((rogueEvent){MOUSE_UP, sx, sy, false, false});
+    return 0;
+}
+
 static int l_tileflags(lua_State *L) {
     lua_Integer t = luaL_checkinteger(L, 1);
     if (t < 0 || t >= NUMBER_TILETYPES) {
@@ -615,6 +623,7 @@ static int l_distmap(lua_State *L) {
 static luaL_Reg reg[] = {
     {"message", l_message},
     {"presskeys", l_presskeys},
+    {"clickcell", l_clickcell},
     {"tileflags", l_tileflags},
     {"iskindknown", l_iskindknown},
     {"stepto", l_stepto},

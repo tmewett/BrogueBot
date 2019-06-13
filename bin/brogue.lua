@@ -84,6 +84,12 @@ function drop(item)
     presskeys("d"..item.letter)
 end
 
+function throw(item, cell)
+    if not item.letter then error("cannot interact with an item not in the pack") end
+    presskeys("t"..item.letter)
+    clickcell(cell)
+end
+
 function pushevents()
 
     rogue = getplayer()
