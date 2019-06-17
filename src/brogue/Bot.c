@@ -9,10 +9,15 @@
 
 static lua_State *L = NULL;
 char *botScript = "";
+
 // whether to hijack user input. set by resetBot based on botMode, unset on death
 boolean botControl = false;
+
 // 0=none 1=control 2=report. set by command line flags
 short botMode = 0;
+
+// 0=playing 1=enchanting 2=identifying
+short botAction = 0;
 
 static short **workGrid = NULL;
 static pcell psnap[DCOLS][DROWS]; // pmap snapshot
@@ -576,6 +581,9 @@ static int l_getplayer(lua_State *L) {
     lua_setfield(L, -2, "strength");
     lua_pushinteger(L, rogue.aggroRange);
     lua_setfield(L, -2, "stealthrange");
+
+    lua_pushinteger(L, botAction);
+    lua_setfield(L, -2, "action");
 
     char let[] = " ";
     if (rogue.weapon) {

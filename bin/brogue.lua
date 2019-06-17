@@ -111,10 +111,49 @@ function throw(item, cell)
     clickcell(cell)
 end
 
+function apply(item, choice)
+    if not item.letter then error("cannot interact with an item not in the pack") end
+    presskeys("a"..item.letter)
+    lastapply = {item, choice}
+end
+
+local scrollsel = {
+    [1] = "onenchant",
+    [2] = "onidentify"
+}
+local choicechecks = {
+    [1] = function (it) return it.category & CAN_BE_ENCHANTED > 0 end,
+    [2] = function (it) return it.flags & ITEM_CAN_BE_IDENTIFIED > 0 end
+}
+
 function pushevents()
 
-    rogue = getplayer()
+    local newrogue = getplayer()
 
+    -- if action is non-zero, we need to make a decision. currently this is either enchanting or identifying
+    if newrogue.action > 0 then
+        local applied, choice = table.unpack(lastapply)
+
+        -- choice omitted or scroll not identified? then fetch from global variable
+        if not (choice and applied.kind) then
+            local name = scrollsel[newrogue.action]
+            choice = _ENV[name]
+        end
+
+        assert(choice, "item choice required but not given")
+
+        if type(choice) == "function" then choice = choice() end
+
+        assert(choice.letter and choicechecks[newrogue.action](choice),
+            "invalid item choice for apply")
+
+        presskeys(choice.letter)
+        -- This code is run with the state of the previous invocation, which is fine as no turns passed.
+        -- Now we've made a decision we need to get new state, so return.
+        return
+    end
+
+    rogue = newrogue
     local pack = getpack()
     rogue.weapon = pack[rogue.weapon]
     rogue.armor = pack[rogue.armor]

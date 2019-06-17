@@ -3,6 +3,7 @@
 extern char *botScript;
 extern boolean botControl;
 extern short botMode;
+extern short botAction;
 
 void resetBot(char *filename);
 void nextBotEvent(rogueEvent *returnEvent);
