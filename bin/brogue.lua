@@ -114,7 +114,7 @@ end
 function apply(item, choice)
     if not item.letter then error("cannot interact with an item not in the pack") end
     presskeys("a"..item.letter)
-    lastapply = {item, choice}
+    lastapply = {item, choice, debug.getinfo(2, "Sl")}
 end
 
 local scrollsel = {
@@ -132,20 +132,21 @@ function pushevents()
 
     -- if action is non-zero, we need to make a decision. currently this is either enchanting or identifying
     if newrogue.action > 0 then
-        local applied, choice = table.unpack(lastapply)
+        local applied, choice, info = table.unpack(lastapply)
+        local applyloc = info.short_src .. ":" .. info.currentline
 
         -- choice omitted or scroll not identified? then fetch from global variable
+        local name
         if not (choice and applied.kind) then
-            local name = scrollsel[newrogue.action]
+            name = scrollsel[newrogue.action]
             choice = _ENV[name]
         end
-
-        assert(choice, "item choice required but not given")
+        assert(choice, (name or "item choice") .. " required but not defined at "..applyloc)
 
         if type(choice) == "function" then choice = choice() end
 
         assert(choice.letter and choicechecks[newrogue.action](choice),
-            "invalid item choice for apply")
+            (name or "argument") .. " gave invalid item for apply at "..applyloc)
 
         presskeys(choice.letter)
         -- This code is run with the state of the previous invocation, which is fine as no turns passed.
