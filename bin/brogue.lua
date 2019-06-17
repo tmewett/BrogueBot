@@ -130,25 +130,31 @@ function pushevents()
 
     local newrogue = getplayer()
 
-    -- if action is non-zero, we need to make a decision. currently this is either enchanting or identifying
+    -- if action is non-zero, we need to make a decision
     if newrogue.action > 0 then
         local applied, choice, info = table.unpack(lastapply)
         local applyloc = info.short_src .. ":" .. info.currentline
 
-        -- choice omitted or scroll not identified? then fetch from global variable
-        local name
-        if not (choice and applied.kind) then
-            name = scrollsel[newrogue.action]
-            choice = _ENV[name]
+        if newrogue.action == 3 then
+            assert(choice and isinworld(choice), "cell choice required for apply at "..applyloc)
+            clickcell(choice)
+        else
+            -- choice omitted or scroll not identified? then fetch from global variable
+            local name
+            if not (choice and applied.kind) then
+                name = scrollsel[newrogue.action]
+                choice = _ENV[name]
+            end
+            assert(choice, (name or "item choice") .. " required but not defined at "..applyloc)
+
+            if type(choice) == "function" then choice = choice() end
+
+            assert(choice.letter and choicechecks[newrogue.action](choice),
+                (name or "argument") .. " gave invalid item for apply at "..applyloc)
+
+            presskeys(choice.letter)
         end
-        assert(choice, (name or "item choice") .. " required but not defined at "..applyloc)
 
-        if type(choice) == "function" then choice = choice() end
-
-        assert(choice.letter and choicechecks[newrogue.action](choice),
-            (name or "argument") .. " gave invalid item for apply at "..applyloc)
-
-        presskeys(choice.letter)
         -- This code is run with the state of the previous invocation, which is fine as no turns passed.
         -- Now we've made a decision we need to get new state, so return.
         return

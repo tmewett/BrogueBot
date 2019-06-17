@@ -16,7 +16,7 @@ boolean botControl = false;
 // 0=none 1=control 2=report. set by command line flags
 short botMode = 0;
 
-// 0=playing 1=enchanting 2=identifying
+// 0=playing 1=enchanting 2=identifying 3=zapping
 short botAction = 0;
 
 static short **workGrid = NULL;

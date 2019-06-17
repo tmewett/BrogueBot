@@ -6002,6 +6002,7 @@ boolean useStaffOrWand(item *theItem, boolean *commandsRecorded) {
     
     originLoc[0] = player.xLoc;
     originLoc[1] = player.yLoc;
+    botAction = 3;
     confirmedTarget = chooseTarget(zapTarget, maxDistance, false, autoTarget, targetAllies, passThroughCreatures, &trajectoryHiliteColor);
     if (confirmedTarget
         && boltKnown
