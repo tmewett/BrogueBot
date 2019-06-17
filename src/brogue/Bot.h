@@ -9,8 +9,6 @@ void nextBotEvent(rogueEvent *returnEvent);
 void botReport();
 void magicMapped();
 
-void calculateDistancesNoClear (short **distanceMap,
+void calculateKnownDistances   (short **distanceMap,
                                 unsigned long blockingTerrainFlags,
-                                creature *traveler,
-                                boolean canUseSecretDoors,
-                                boolean eightWays);
+                                boolean monstersBlock);

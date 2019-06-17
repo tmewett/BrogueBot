@@ -487,6 +487,7 @@ static int l_getworld(lua_State *L) {
     // iterate all pcells, updating each subtable on the stack
     pcell *cell;
     int j;
+    unsigned long cellflags;
     for (int i=1; i <= DCOLS*DROWS; ++i) {
         short x = (i-1) / DROWS, y = (i-1) % DROWS;
 
@@ -506,7 +507,8 @@ static int l_getworld(lua_State *L) {
             lua_seti(L, j++, i);
         }
 
-        lua_pushinteger(L, cell->flags);
+        getLocationFlags(x, y, NULL, NULL, &cellflags, true);
+        lua_pushinteger(L, cellflags);
         lua_seti(L, j++, i);
     }
 
@@ -603,6 +605,7 @@ static int l_getplayer(lua_State *L) {
 static int l_distmap(lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     lua_Integer blockflags = luaL_checkinteger(L, 2);
+    int monstblock = lua_toboolean(L, 3);
 
     lua_createtable(L, DCOLS*DROWS, 0);
 
@@ -616,12 +619,12 @@ static int l_distmap(lua_State *L) {
         lua_pop(L, 1);
     }
 
-    calculateDistancesNoClear(workGrid, blockflags, NULL, false, true);
+    calculateKnownDistances(workGrid, blockflags, monstblock);
 
     short d;
     for (int i=0; i < DCOLS*DROWS; ++i) {
-        if (!(pmap[i / DROWS][i % DROWS].flags & DISCOVERED)) continue;
         d = workGrid[0][i];
+        if (!(pmap[i / DROWS][i % DROWS].flags & (DISCOVERED | MAGIC_MAPPED))) continue;
         lua_pushinteger(L, d);
         lua_seti(L, -2, i+1);
     }
