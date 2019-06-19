@@ -201,10 +201,10 @@ function pushevents()
             world.lastseen[cell] = rogue.turn
         end
 
-        if not world.downstairs and fl & HAS_DOWN_STAIRS > 0 then
+        if not world.downstairs and world.dungeon[cell] == 12 then
             world.downstairs = cell
         end
-        if not world.upstairs and fl & HAS_UP_STAIRS > 0 then
+        if not world.upstairs and world.dungeon[cell] == 13 then
             world.upstairs = cell
         end
     end
