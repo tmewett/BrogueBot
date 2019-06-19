@@ -55,11 +55,16 @@ celldiffs = {
     [DOWNRIGHT]   = DROWS + 1
 }
 
+local function wraps(c1, c2)
+    if c2 < c1 then c1, c2 = c2, c1 end
+    return c1 % DROWS == 0 and c2 == c1 + 1
+end
+
 -- returns a table all 8 cells in the neighborhood of the cell, indexed by direction
 function neighborhood(cell)
     local t = {}
     for dir, v in pairs(celldiffs) do
-        t[dir] = isinworld(cell + v)
+        t[dir] = not wraps(cell, cell+v) and iscell(cell+v) or nil
     end
     return t
 end
