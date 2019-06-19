@@ -106,18 +106,27 @@ function expecteddamages(target, attacker)
 end
 
 function drop(item)
-    if not item.letter then error("cannot interact with an item not in the pack") end
+    if not item.letter then error("cannot drop an item not in the pack") end
     presskeys("d"..item.letter)
 end
 
 function throw(item, cell)
-    if not item.letter then error("cannot interact with an item not in the pack") end
+    if not item.letter then error("cannot throw an item not in the pack") end
+    if not iscell(cell) then error("throw target must be a cell") end
     presskeys("t"..item.letter)
     clickcell(cell)
 end
 
+function equip(item)
+    if not item.letter then error("cannot equip an item not in the pack") end
+    if not (item.category == ARMOR or item.category == WEAPON or item.category == RING) then
+        error("can only equip weapons, armor and rings")
+    end
+    presskeys("e"..item.letter)
+end
+
 function apply(item, choice)
-    if not item.letter then error("cannot interact with an item not in the pack") end
+    if not item.letter then error("cannot apply an item not in the pack") end
     presskeys("a"..item.letter)
     lastapply = {item, choice, debug.getinfo(2, "Sl")}
 end
