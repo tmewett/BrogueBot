@@ -21,18 +21,18 @@ function hastileflag(cell, tf)
 end
 
 -- returns cell if cell is a valid index, false otherwise
-function isinworld(cell)
+function iscell(cell)
     return cell >= 1 and cell <= DROWS*DCOLS and cell
 end
 
-function discovered(cell)
+function cellknown(cell)
     return world.lastseen[cell] and true
 end
 
 -- returns a truthy value if we know we are unobstructed when stepping in direction dir from cell
 function canstepto(cell, dir)
     local step = cell + celldiffs[dir]
-    if not discovered(step) or hastileflag(step, T_OBSTRUCTS_PASSABILITY) then return false end
+    if not cellknown(step) or hastileflag(step, T_OBSTRUCTS_PASSABILITY) then return false end
 
     -- now we know step is discovered and unobstructed
     local x1,y1 = tocoords(cell)
@@ -40,7 +40,7 @@ function canstepto(cell, dir)
     if x1==x2 or y1==y2 then return true end
 
     local d1, d2 = tocell(x1,y2), tocell(x2,y1)
-    return discovered(d1) and discovered(d2) and not
+    return cellknown(d1) and cellknown(d2) and not
         (hastileflag(d1, T_OBSTRUCTS_DIAGONAL_MOVEMENT) or hastileflag(d2, T_OBSTRUCTS_DIAGONAL_MOVEMENT))
 end
 
@@ -136,7 +136,7 @@ function pushevents()
         local applyloc = info.short_src .. ":" .. info.currentline
 
         if newrogue.action == 3 then
-            assert(choice and isinworld(choice), "cell choice required for apply at "..applyloc)
+            assert(choice and iscell(choice), "cell choice required for apply at "..applyloc)
             clickcell(choice)
         else
             -- choice omitted or scroll not identified? then fetch from global variable
