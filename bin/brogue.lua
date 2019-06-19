@@ -69,6 +69,26 @@ function neighborhood(cell)
     return t
 end
 
+function closer(dmap)
+    return function (c1, c2)
+        if dmap[c1] <= dmap[c2] then
+            return c1
+        else
+            return c2
+        end
+    end
+end
+
+function closerthing(dmap)
+    return function (t1, t2)
+        if dmap[t1.cell] <= dmap[t2.cell] then
+            return t1
+        else
+            return t2
+        end
+    end
+end
+
 -- returns the direction from the cell of a path of shortest distance, according to distmap
 function nextstep(cell, distmap)
     if distmap[cell] == UNREACHABLE or distmap[cell] == 0 then return nil end
