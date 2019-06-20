@@ -392,6 +392,8 @@ static void pushCreature(lua_State *L, creature *cr) {
     lua_setfield(L, -2, "moveticks");
 
     if (cr != &player) {
+        lua_pushinteger(L, cr->info.monsterID);
+        lua_setfield(L, -2, "type");
         lua_pushinteger(L, cr->creatureState);
         lua_setfield(L, -2, "state");
         lua_pushinteger(L, cr->newPowerCount);
