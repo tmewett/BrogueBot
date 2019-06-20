@@ -542,12 +542,11 @@ static int l_getpack(lua_State *L) {
 static int l_getitems(lua_State *L) {
     lua_newtable(L);
 
-    int i = 1;
     for (item *it = floorItems->nextItem; it != NULL; it = it->nextItem) {
         // only give info on items that can be seen or are magic-detected
         if (!playerCanSee(it->xLoc, it->yLoc) && !(it->flags & ITEM_MAGIC_DETECTED)) continue;
         pushItem(L, it);
-        lua_seti(L, -2, i++);
+        lua_seti(L, -2, it->xLoc * DROWS + it->yLoc + 1);
     }
     return 1;
 }
@@ -555,16 +554,15 @@ static int l_getitems(lua_State *L) {
 static int l_getcreatures(lua_State *L) {
     lua_newtable(L);
 
-    int i = 1;
     for (creature *cr = monsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
         if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
         pushCreature(L, cr);
-        lua_seti(L, -2, i++);
+        lua_seti(L, -2, cr->xLoc * DROWS + cr->yLoc + 1);
     }
     for (creature *cr = dormantMonsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
         if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
         pushCreature(L, cr);
-        lua_seti(L, -2, i++);
+        lua_seti(L, -2, cr->xLoc * DROWS + cr->yLoc + 1);
     }
 
     return 1;

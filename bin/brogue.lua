@@ -209,6 +209,7 @@ function pushevents()
     local seenworld = getworld()
     world = levels[rogue.depth] or {}
     world.lastseen = world.lastseen or {}
+    world.items = world.items or {}
 
     for attr, t in pairs(seenworld) do
         world[attr] = world[attr] or {}
@@ -236,13 +237,20 @@ function pushevents()
         if not world.upstairs and world.dungeon[cell] == 13 then
             world.upstairs = cell
         end
+
+        world.items[cell] = nil
+    end
+
+    local seenitems = getitems()
+
+    for cell, it in pairs(seenitems) do
+        world.items[cell] = it
     end
 
     levels[rogue.depth] = world
 
     rogue.pack = pack
     creatures = getcreatures()
-    items = getitems()
     act()
 
 end
