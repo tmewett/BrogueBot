@@ -226,7 +226,7 @@ function pushevents()
             world.surface[cell] = 0
             world.gas[cell] = 0
             -- hide unknown information
-            world.flags[cell] = fl & ~(HAS_MONSTER | HAS_DORMANT_MONSTER | HAS_ITEM | IS_IN_SHADOW)
+            world.flags[cell] = fl & ~(IS_IN_SHADOW)
         else
             world.lastseen[cell] = rogue.turn
         end
