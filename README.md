@@ -29,3 +29,5 @@ The curses build requires ncurses. For the TCOD build, a recent libtcod source d
 As *bin* contains all the Lua files, BrogueBot should be run with that as the current working directory. In Linux-like environments, execute `cd bin; ./brogue`.
 
 See the [User's Guide](https://github.com/tmewett/BrogueBot/wiki/User-Guide) for more information.
+
+Personal suggestion: check out [lua-stdlib](https://github.com/lua-stdlib/lua-stdlib) for a useful general Lua library, and [Awesome Lua](https://github.com/LewisJEllis/awesome-lua) for a huge list of Lua utilites.
