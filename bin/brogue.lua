@@ -106,8 +106,13 @@ end
 
 function hitprobability(defender, attacker)
     attacker = attacker or rogue
-    local deffactor = 0.987
-    local prob = attacker.accuracy * math.pow(deffactor, defender.defense) / 100
+
+    if defender.statuses[STATUS_STUCK] > 0
+        or defender.bookflags & MB_CAPTIVE > 0
+        or attacker.bookflags & MB_SEIZING > 0 and defender.bookflags & MB_SEIZED > 0
+    then return 1.0 end
+
+    local prob = attacker.accuracy * math.pow(0.987, defender.defense) / 100
     return math.max(0.0, math.min(1.0, prob))
 end
 
