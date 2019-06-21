@@ -193,6 +193,7 @@ function pushevents()
         -- Now we've made a decision we need to get new state, so return.
         return
     end
+    newrogue.action = nil
 
     rogue = newrogue
     local pack = getpack()

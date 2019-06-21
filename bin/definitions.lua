@@ -2,6 +2,7 @@ local function Fl(n) return 1 << n end
 local i
 local function nexti() i = i + 1; return i end
 
+-- dungeon width and height
 DCOLS = 79
 DROWS = 29
 
@@ -15,7 +16,7 @@ DOWNLEFT        = 6
 UPRIGHT         = 7
 DOWNRIGHT       = 8
 
-UNREACHABLE = 30000
+UNREACHABLE = 30000     -- distance value indicating "infinity," i.e. that the cell cannot be reached
 
 
 -- cell flags
@@ -158,7 +159,7 @@ MB_ALREADY_SEEN             = Fl(22)   -- seeing this monster won't interrupt ex
 -- monster states
 i = -1
 MONSTER_SLEEPING                = nexti()
-MONSTER_HUNTING                 = nexti()  -- MONSTER_TRACKING_SCENT internally
+MONSTER_HUNTING                 = nexti()  -- (MONSTER_TRACKING_SCENT internally)
 MONSTER_WANDERING               = nexti()
 MONSTER_FLEEING                 = nexti()
 MONSTER_ALLY                    = nexti()
@@ -195,16 +196,12 @@ STATUS_AGGRAVATING              = nexti()
 -- item flags
 ITEM_IDENTIFIED         = Fl(0)
 ITEM_EQUIPPED           = Fl(1)
-ITEM_CURSED             = Fl(2)
+ITEM_CURSED             = Fl(2)    -- the item contains a "malevolent force," which prevents removing it. only given when known
 ITEM_PROTECTED          = Fl(3)
-ITEM_RUNIC              = Fl(5)
-ITEM_RUNIC_HINTED       = Fl(6)
-ITEM_RUNIC_IDENTIFIED   = Fl(7)
 ITEM_CAN_BE_IDENTIFIED  = Fl(8)
 ITEM_PREPLACED          = Fl(9)
 ITEM_FLAMMABLE          = Fl(10)
 ITEM_MAGIC_DETECTED     = Fl(11)
-ITEM_MAX_CHARGES_KNOWN  = Fl(12)
 ITEM_IS_KEY             = Fl(13)
 
 ITEM_ATTACKS_HIT_SLOWLY = Fl(14)   -- mace, hammer
