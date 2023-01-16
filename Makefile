@@ -1,114 +1,113 @@
+include config.mk
 
-SDL_FLAGS = `sdl-config --cflags` `sdl-config --libs`
-LIBTCODDIR=src/libtcod-1.5.2
-CFLAGS=-Isrc/brogue -Isrc/platform -Wall -Wno-parentheses ${DEFINES}
-RELEASENAME=brogue-1.7.4
-LASTTARGET := $(shell ./brogue --target)
-CC ?= gcc
+cflags := -Isrc/brogue -Isrc/platform -std=c99 \
+	-Wall -Wpedantic -Werror=implicit -Wno-parentheses -Wno-unused-result \
+	-Wformat -Werror=format-security -Wformat-overflow=0
+libs := -lm
+cppflags := -DDATADIR=$(DATADIR)
 
-ifeq (${LASTTARGET},both)
-all : both
-else ifeq (${LASTTARGET},curses)
-all : curses
-else ifeq (${LASTTARGET},tcod)
-all : tcod
+sources := $(wildcard src/brogue/*.c) $(addprefix src/platform/,main.c platformdependent.c)
+
+ifeq ($(RELEASE),YES)
+	extra_version :=
 else
-all : both
+	extra_version := $(shell bash tools/git-extra-version)
+endif
+cppflags += -DBROGUE_EXTRA_VERSION='"$(extra_version)"'
+
+ifeq ($(TERMINAL),YES)
+	sources += $(addprefix src/platform/,curses-platform.c term.c)
+	cppflags += -DBROGUE_CURSES
+	libs += -lncurses
 endif
 
-%.o : %.c Makefile src/brogue/Rogue.h src/brogue/IncludeGlobals.h
-	$(CC) $(CFLAGS) -g -o $@ -c $< 
-
-BROGUEFILES=src/brogue/Architect.o \
-	src/brogue/Bot.o \
-	src/brogue/Combat.o \
-	src/brogue/Dijkstra.o \
-	src/brogue/Globals.o \
-	src/brogue/IO.o \
-	src/brogue/Items.o \
-	src/brogue/Light.o \
-	src/brogue/Monsters.o \
-	src/brogue/Buttons.o \
-	src/brogue/Movement.o \
-	src/brogue/Recordings.o \
-	src/brogue/RogueMain.o \
-	src/brogue/Random.o \
-	src/brogue/MainMenu.o \
-	src/brogue/Grid.o \
-	src/brogue/Time.o \
-	src/platform/main.o \
-	src/platform/platformdependent.o \
-	src/platform/curses-platform.o \
-	src/platform/tcod-platform.o \
-	src/platform/term.o
-
-TCOD_DEF = -DBROGUE_TCOD -I$(LIBTCODDIR)/include
-TCOD_DEP = ${LIBTCODDIR}
-TCOD_LIB = -L. -L${LIBTCODDIR} ${SDL_FLAGS} -ltcod -Wl,-rpath,.
-
-CURSES_DEF = -DBROGUE_CURSES
-CURSES_LIB = -lncurses -lm
-
-LIBRARIES += -llua
-
-tcod : DEPENDENCIES += ${TCOD_DEP}
-tcod : DEFINES += ${TCOD_DEF}
-tcod : LIBRARIES += ${TCOD_LIB}
-
-curses : DEFINES += ${CURSES_DEF}
-curses : LIBRARIES += ${CURSES_LIB}
-
-both : DEPENDENCIES += ${TCOD_DEP}
-both : DEFINES += ${TCOD_DEF} ${CURSES_DEF}
-both : LIBRARIES += ${TCOD_LIB} ${CURSES_LIB}
-
-ifeq (${LASTTARGET},both)
-both : bin/brogue
-tcod : clean bin/brogue
-curses : clean bin/brogue
-else ifeq (${LASTTARGET},curses)
-curses : bin/brogue
-tcod : clean bin/brogue
-both : clean bin/brogue
-else ifeq (${LASTTARGET},tcod)
-tcod : bin/brogue
-curses : clean bin/brogue
-both : clean bin/brogue
-else
-both : bin/brogue
-curses : bin/brogue
-tcod : bin/brogue
+ifeq ($(GRAPHICS),YES)
+	sources += $(addprefix src/platform/,sdl2-platform.c tiles.c)
+	cflags += $(shell $(SDL_CONFIG) --cflags)
+	cppflags += -DBROGUE_SDL
+	libs += $(shell $(SDL_CONFIG) --libs) -lSDL2_image
 endif
 
-.PHONY : clean both curses tcod tar
+ifeq ($(WEBBROGUE),YES)
+	sources += $(addprefix src/platform/,web-platform.c)
+	cppflags += -DBROGUE_WEB
+endif
 
-bin/brogue : ${DEPENDENCIES} ${BROGUEFILES}
-	$(CC) -O2 -march=i586 -o bin/brogue ${BROGUEFILES} ${LIBRARIES} -Wl,-rpath,.
+ifeq ($(MAC_APP),YES)
+	cppflags += -DSDL_PATHS
+endif
 
-clean : 
-	rm -f src/brogue/*.o src/platform/*.o bin/brogue
+ifeq ($(DEBUG),YES)
+	cflags += -g -Og
+	cppflags += -DENABLE_PLAYBACK_SWITCH
+else
+	cflags += -O2
+endif
 
-${LIBTCODDIR} :
-	src/get-libtcod.sh
+objects := $(sources:.c=.o)
 
-tar : both
-	rm -f ${RELEASENAME}.tar.gz
-	tar --transform 's,^,${RELEASENAME}/,' -czf ${RELEASENAME}.tar.gz \
-	Makefile \
-	brogue \
-	$(wildcard *.sh) \
-	$(wildcard *.rtf) \
-	readme \
-	$(wildcard *.txt) \
-	bin/brogue \
-	bin/keymap \
-	bin/icon.bmp \
-	bin/brogue-icon.png \
-	$(wildcard bin/fonts/*.png) \
-	$(wildcard bin/*.so) \
-	$(wildcard src/*.sh) \
-	$(wildcard src/brogue/*.c) \
-	$(wildcard src/brogue/*.h) \
-	$(wildcard src/platform/*.c) \
-	$(wildcard src/platform/*.h)
+.PHONY: clean
 
+%.o: %.c src/brogue/Rogue.h src/brogue/IncludeGlobals.h
+	$(CC) $(cppflags) $(CPPFLAGS) $(cflags) $(CFLAGS) -c $< -o $@
+
+bin/brogue: $(objects)
+	$(CC) $(cflags) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(libs) $(LDLIBS)
+
+windows/icon.o: windows/icon.rc
+	windres $< $@
+
+bin/brogue.exe: $(objects) windows/icon.o
+	$(CC) $(cflags) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(libs) $(LDLIBS)
+	mt -manifest windows/brogue.exe.manifest '-outputresource:bin/brogue.exe;1'
+
+clean:
+	$(RM) src/brogue/*.o src/platform/*.o windows/icon.o bin/brogue{,.exe}
+
+
+# Release archives
+
+common_bin := bin/assets bin/keymap.txt
+
+define make_release_base
+	mkdir $@
+	cp README.md $@/README.txt
+	cp CHANGELOG.md $@/CHANGELOG.txt
+	cp LICENSE.txt $@
+endef
+
+# Flatten bin/ in the Windows archive
+BrogueCE-windows: bin/brogue.exe
+	$(make_release_base)
+	cp -r $(common_bin) bin/{brogue.exe,brogue-cmd.bat} $@
+
+BrogueCE-macos: Brogue.app
+	$(make_release_base)
+	cp -r Brogue.app $@/"Brogue CE.app"
+
+BrogueCE-linux: bin/brogue
+	$(make_release_base)
+	cp brogue $@
+	cp -r --parents $(common_bin) bin/brogue $@
+	cp linux/make-link-for-desktop.sh $@
+
+
+# macOS app bundle
+
+# $* is the matched %
+icon_%.png: bin/assets/icon.png
+	convert $< -resize $* $@
+
+macos/Brogue.icns: icon_32.png icon_128.png icon_256.png icon_512.png
+	png2icns $@ $^
+	$(RM) $^
+
+Brogue.app: bin/brogue
+	mkdir -p $@/Contents/{MacOS,Resources}
+	cp macos/Info.plist $@/Contents
+	cp bin/brogue $@/Contents/MacOS
+	cp -r macos/Brogue.icns bin/assets $@/Contents/Resources
+
+macos/sdl2.rb:
+	curl -L 'https://raw.githubusercontent.com/Homebrew/homebrew-core/master/Formula/sdl2.rb' >$@
+	patch $@ macos/sdl2-deployment-target.patch
