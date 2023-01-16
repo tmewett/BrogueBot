@@ -1,14 +1,10 @@
-#ifdef BROGUE_CURSES
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include "term.h"
-#include <sys/timeb.h>
 #include <stdint.h>
 #include <signal.h>
+#include <sys/time.h>
 #include "platform.h"
-
-extern playerCharacter rogue;
+#include "term.h"
 
 static void gameLoop() {
     signal(SIGINT, SIG_DFL); // keep SDL from overriding the default ^C handler when it's linked
@@ -16,22 +12,63 @@ static void gameLoop() {
     if (!Term.start()) {
         return;
     }
-    Term.title("BrogueBot " BROGUE_VERSION_STRING);
+    Term.title("Brogue");
     Term.resize(COLS, ROWS);
 
     rogueMain();
-    
+
     Term.end();
 }
 
-static void curses_plotChar(uchar ch,
+static char glyphToAscii(enum displayGlyph glyph) {
+    unsigned int ch;
+
+    switch (glyph) {
+        case G_UP_ARROW: return '^';
+        case G_DOWN_ARROW: return 'v';
+        case G_FLOOR: return '.';
+        case G_CHASM: return ':';
+        case G_TRAP: return '%';
+        case G_FIRE: return '^';
+        case G_FOLIAGE: return '&';
+        case G_AMULET: return ',';
+        case G_SCROLL: return '?';
+        case G_RING: return '=';
+        case G_WEAPON: return '(';
+        case G_GEM: return '+';
+        case G_TOTEM: return '0'; // zero
+        case G_GOOD_MAGIC: return '$';
+        case G_BAD_MAGIC: return '+';
+        case G_DOORWAY: return '<';
+        case G_CHARM: return '7';
+        case G_GUARDIAN: return '5';
+        case G_WINGED_GUARDIAN: return '5';
+        case G_EGG: return 'o';
+        case G_BLOODWORT_STALK: return '&';
+        case G_FLOOR_ALT: return '.';
+        case G_UNICORN: return 'U';
+        case G_TURRET: return '*';
+        case G_CARPET: return '.';
+        case G_STATUE: return '5';
+        case G_CRACKED_STATUE: return '5';
+        case G_MAGIC_GLYPH: return ':';
+        case G_ELECTRIC_CRYSTAL: return '$';
+
+        default:
+            ch = glyphToUnicode(glyph);
+            brogueAssert(ch < 0x80); // assert ascii
+            return ch;
+    }
+}
+
+static void curses_plotChar(enum displayGlyph ch,
               short xLoc, short yLoc,
               short foreRed, short foreGreen, short foreBlue,
               short backRed, short backGreen, short backBlue) {
-    
+
     fcolor fore;
     fcolor back;
-    
+
     fore.r = (float) foreRed / 100;
     fore.g = (float) foreGreen / 100;
     fore.b = (float) foreBlue / 100;
@@ -39,46 +76,8 @@ static void curses_plotChar(uchar ch,
     back.g = (float) backGreen / 100;
     back.b = (float) backBlue / 100;
 
-    #ifdef USE_UNICODE
-    // because we can't look at unicode and ascii without messing with Rogue.h, reinterpret until some later version comes along:
-    switch (ch) {
-    case FLOOR_CHAR: ch = '.'; break;
-    case CHASM_CHAR: ch = ':'; break;
-    case TRAP_CHAR: ch = '%'; break;
-    case FIRE_CHAR: ch = '^'; break;
-    case FOLIAGE_CHAR: ch = '&'; break;
-    case AMULET_CHAR: ch = ','; break;
-    case SCROLL_CHAR: ch = '?'; break;
-    case RING_CHAR: ch = '='; break;
-    case WEAPON_CHAR: ch = '('; break;
-    case GEM_CHAR: ch = '+'; break;
-    case TOTEM_CHAR: ch = '0'; break;
-    case BAD_MAGIC_CHAR: ch = '+'; break;
-    case GOOD_MAGIC_CHAR: ch = '$'; break;
+    ch = glyphToAscii(ch);
 
-    // case UP_ARROW_CHAR: ch = '^'; break; // same as WEAPON_CHAR
-    case DOWN_ARROW_CHAR: ch = 'v'; break;
-    case LEFT_ARROW_CHAR: ch = '<'; break;
-    case RIGHT_ARROW_CHAR: ch = '>'; break;
-
-    case UP_TRIANGLE_CHAR: ch = '^'; break;
-    case DOWN_TRIANGLE_CHAR: ch = 'v'; break;
-
-    case CHARM_CHAR: ch = '7'; break;
-
-    case OMEGA_CHAR: ch = '<'; break;
-    case THETA_CHAR: ch = '0'; break;
-    case LAMDA_CHAR: ch = '^'; break;
-    case KOPPA_CHAR: ch = '0'; break;
-
-    case LOZENGE_CHAR: ch = 'o'; break;
-    case CROSS_PRODUCT_CHAR: ch = 'x'; break;
-
-    case STATUE_CHAR: ch = '5'; break;
-    case UNICORN_CHAR: ch = 'U'; break;
-    }
-    #endif
-    
     if (ch < ' ' || ch > 127) ch = ' ';
     Term.put(xLoc, yLoc, ch, &fore, &back);
 }
@@ -108,16 +107,16 @@ static int rewriteKey(int key, boolean text) {
 
 #define PAUSE_BETWEEN_EVENT_POLLING     34//17
 
-static uint32_t getTime() {
-    struct timeb time;
-    ftime(&time);
-    return 1000 * time.time + time.millitm;
+static uint64_t getTime() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 static boolean curses_pauseForMilliseconds(short milliseconds) {
     Term.refresh();
     Term.wait(milliseconds);
-    
+
     // hasKey returns true if we have a mouse event, too.
     return Term.hasKey();
 }
@@ -125,32 +124,26 @@ static boolean curses_pauseForMilliseconds(short milliseconds) {
 static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput, boolean colorsDance) {
     int key;
     // TCOD_mouse_t mouse;
-    uint32_t theTime, waitTime;
+    uint64_t theTime, waitTime;
     // short x, y;
-    
+
     Term.refresh();
 
-    if (noMenu && rogue.nextGame == NG_NOTHING) rogue.nextGame = NG_NEW_GAME;
-    
     for (;;) {
         theTime = getTime(); //TCOD_sys_elapsed_milli();
-        
+
         /*if (TCOD_console_is_window_closed()) {
             rogue.gameHasEnded = true; // causes the game loop to terminate quickly
             returnEvent->eventType = KEYSTROKE;
             returnEvent->param1 = ACKNOWLEDGE_KEY;
             return;
         }*/
-        
+
         if (colorsDance) {
             shuffleTerrainColors(3, true);
             commitDraws();
-        }   
-
-        if (botControl) {
-            nextBotEvent(returnEvent);
-            return;
         }
+
 
         key = Term.getkey();
         if (key == TERM_MOUSE) {
@@ -169,7 +162,7 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
             key = rewriteKey(key, textInput);
 
             returnEvent->eventType = KEYSTROKE;
-            returnEvent->controlKey = 0; //(key.rctrl || key.lctrl);
+            returnEvent->controlKey = Term.ctrlPressed(&key); //(key.rctrl || key.lctrl);
             returnEvent->shiftKey = 0; //key.shift;
             returnEvent->param1 = key;
 
@@ -181,7 +174,7 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
             else if (key == Term.keys.quit) {
                 rogue.gameHasEnded = true;
                 rogue.nextGame = NG_QUIT; // causes the menu to drop out immediately
-            } 
+            }
             else if ((key >= 'A' && key <= 'Z')) {
                 returnEvent->shiftKey = 1;
                 // returnEvent->param1 += 'a' - 'A';
@@ -196,7 +189,7 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
         }
 
         waitTime = PAUSE_BETWEEN_EVENT_POLLING + theTime - getTime();
-        
+
         if (waitTime > 0 && waitTime <= PAUSE_BETWEEN_EVENT_POLLING) {
             curses_pauseForMilliseconds(waitTime);
         }
@@ -205,12 +198,12 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
 
 static void curses_remap(const char *input_name, const char *output_name) {
     struct mapsymbol *sym = malloc(sizeof(*sym));
-    
+
     if (sym == NULL) return; // out of memory?  seriously?
-    
+
     sym->in_c = Term.keycodeByName(input_name);
     sym->out_c = Term.keycodeByName(output_name);
-    
+
     sym->next = keymap;
     keymap = sym;
 }
@@ -225,7 +218,8 @@ struct brogueConsole cursesConsole = {
     curses_nextKeyOrMouseEvent,
     curses_plotChar,
     curses_remap,
-    modifier_held
+    modifier_held,
+    NULL,
+    NULL,
+    NULL
 };
-#endif
-
