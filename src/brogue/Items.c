@@ -6388,6 +6388,7 @@ boolean useStaffOrWand(item *theItem, boolean *commandsRecorded) {
 
     pos originLoc = player.loc;
     pos zapTarget;
+    botAction = 3;
     confirmedTarget = chooseTarget(&zapTarget, maxDistance, false, autoTarget,
         targetAllies, (boltKnown ? &theBolt : &boltCatalog[BOLT_NONE]), &trajectoryHiliteColor);
     if (confirmedTarget
@@ -6637,6 +6638,7 @@ void apply(item *theItem, boolean recordCommands) {
             message(buf, 0);
             return;
     }
+    botAction = 0;
 
     if (!commandsRecorded) { // to make sure we didn't already record the keystrokes above with staff/wand targeting
         command[c] = '\0';
@@ -6833,6 +6835,7 @@ void readScroll(item *theItem) {
                 message("everything in your pack is already identified.", 0);
                 break;
             }
+            botAction = 2;
             do {
                 theItem = promptForItemOfType((ALL_ITEMS), ITEM_CAN_BE_IDENTIFIED, 0,
                                               KEYBOARD_LABELS ? "Identify what? (a-z; shift for more info)" : "Identify what?",
@@ -6878,6 +6881,7 @@ void readScroll(item *theItem) {
                 message("you have nothing that can be enchanted.", 0);
                 break;
             }
+            botAction = 1;
             do {
                 theItem = promptForItemOfType((WEAPON | ARMOR | RING | STAFF | WAND | CHARM), 0, 0,
                                               KEYBOARD_LABELS ? "Enchant what? (a-z; shift for more info)" : "Enchant what?",
@@ -7021,6 +7025,7 @@ void readScroll(item *theItem) {
                 }
             }
             colorFlash(&magicMapFlashColor, 0, MAGIC_MAPPED, 15, DCOLS + DROWS, player.loc.x, player.loc.y);
+            magicMapped();
             break;
         case SCROLL_AGGRAVATE_MONSTER:
             aggravateMonsters(DCOLS + DROWS, player.loc.x, player.loc.y, &gray);

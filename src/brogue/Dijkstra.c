@@ -205,6 +205,53 @@ void dijkstraScan(short **distanceMap, short **costMap, boolean useDiagonals) {
     pdsBatchOutput(&map, distanceMap, useDiagonals);
 }
 
+/* BrogueBot addition. Fills costMap based on known dungeon info only. */
+static void setupKnownCosts(short **costMap, unsigned long blockingTerrainFlags, boolean monstersBlock) {
+
+    unsigned long flags;
+    char cost;
+    creature *monst;
+    short i, j;
+
+    for (i=0; i<DCOLS; i++) {
+        for (j=0; j<DROWS; j++) {
+            getLocationFlags(i, j, &flags, NULL, NULL, true);
+            monst = monsterAtLoc(i, j);
+            if (monst && (canSeeMonster(monst) || monsterRevealed(monst))
+                && (monstersBlock && !(monst->creatureState & MONSTER_ALLY)
+                    || (monst->info.flags & (MONST_IMMUNE_TO_WEAPONS | MONST_INVULNERABLE))
+                    && (monst->info.flags & (MONST_IMMOBILE | MONST_GETS_TURN_ON_ACTIVATION)))) {
+
+                // avoid damage immune stationary monsters and also non-allies if monstersBlock is true
+                cost = PDS_FORBIDDEN;
+            } else if (!(pmap[i][j].flags & (DISCOVERED | MAGIC_MAPPED)) || (flags & T_OBSTRUCTS_PASSABILITY)) {
+                // undiscovered or known obstructive. PDS_OBSTRUCTION marks diagonal-blocking cells
+                cost = (flags & T_OBSTRUCTS_DIAGONAL_MOVEMENT) ? PDS_OBSTRUCTION : PDS_FORBIDDEN;
+            } else if (flags & blockingTerrainFlags) {
+                // user-specified blocking
+                cost = PDS_FORBIDDEN;
+            } else {
+                cost = 1;
+            }
+
+            costMap[i][j] = cost;
+        }
+    }
+
+}
+
+/* BrogueBot addition. Calculates distances, based on given initial distanceMap (destination cells must be set),
+    using only known information about the dungeon. Can optionally treat monsters as impassable. */
+void calculateKnownDistances   (short **distanceMap,
+                                unsigned long blockingTerrainFlags,
+                                boolean monstersBlock) {
+
+    short **costMap = allocGrid();
+    setupKnownCosts(costMap, blockingTerrainFlags, monstersBlock);
+    dijkstraScan(distanceMap, costMap, true);
+    freeGrid(costMap);
+}
+
 void calculateDistances(short **distanceMap,
                         short destinationX, short destinationY,
                         unsigned long blockingTerrainFlags,

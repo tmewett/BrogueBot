@@ -977,6 +977,7 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
     player.bookkeepingFlags |= MB_IS_DYING;
     rogue.autoPlayingLevel = false;
     rogue.gameInProgress = false;
+    botControl = false;
     flushBufferToFile();
 
     if (rogue.playbackFastForward) {
@@ -1131,6 +1132,7 @@ void victory(boolean superVictory) {
     char recordingFilename[BROGUE_FILENAME_MAX] = {0};
 
     rogue.gameInProgress = false;
+    botControl = false;
     flushBufferToFile();
 
     if (rogue.playbackFastForward) {

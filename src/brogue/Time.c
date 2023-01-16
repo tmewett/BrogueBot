@@ -2603,6 +2603,10 @@ void playerTurnEnded() {
         animateFlares(rogue.flares, rogue.flareCount);
         rogue.flareCount = 0;
     }
+
+    if (botMode == 2 && !rogue.playbackFastForward) {
+        botReport();
+    }
 }
 
 void resetScentTurnNumber() { // don't want player.scentTurnNumber to roll over the short maxint!

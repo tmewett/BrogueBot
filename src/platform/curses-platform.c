@@ -12,7 +12,7 @@ static void gameLoop() {
     if (!Term.start()) {
         return;
     }
-    Term.title("Brogue");
+    Term.title("BrogueBot");
     Term.resize(COLS, ROWS);
 
     rogueMain();
@@ -144,6 +144,10 @@ static void curses_nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInpu
             commitDraws();
         }
 
+        if (botControl) {
+            nextBotEvent(returnEvent);
+            return;
+        }
 
         key = Term.getkey();
         if (key == TERM_MOUSE) {

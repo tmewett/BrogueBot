@@ -23,6 +23,8 @@ static void printCommandlineHelp() {
     "-s seed                    start a new game with the specified numerical seed\n"
     "-o filename[.broguesave]   open a save file (extension optional)\n"
     "-v recording[.broguerec]   view a recording (extension optional)\n"
+    "-b <script file>           use bot script to play game\n"
+    "-R <script file>           use bot script to process information each turn\n"
 #ifdef BROGUE_WEB
     "--server-mode              run the game in web-brogue server mode\n"
 #endif
@@ -100,6 +102,22 @@ int main(int argc, char *argv[])
 
     int i;
     for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-b") == 0) {
+            if (i + 1 < argc) {
+                botScript = argv[++i];
+                botMode = 1;
+                continue;
+            }
+        }
+
+        if (strcmp(argv[i], "-R") == 0) {
+            if (i + 1 < argc) {
+                botScript = argv[++i];
+                botMode = 2;
+                continue;
+            }
+        }
+
         if (strcmp(argv[i], "--scores") == 0) {
             // just dump the scores and quit!
             dumpScores();
