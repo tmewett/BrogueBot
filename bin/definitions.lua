@@ -30,11 +30,11 @@ ITEM_DETECTED               = Fl(12)   -- magic-detected item on cell
 CLAIRVOYANT_VISIBLE         = Fl(13)
 CLAIRVOYANT_DARKENED        = Fl(15)   -- magical blindness from a cursed ring of clairvoyance
 CAUGHT_FIRE_THIS_TURN       = Fl(16)   -- so that fire does not spread asymmetrically
-KNOWN_TO_BE_TRAP_FREE       = Fl(19)   -- keep track of where the player has stepped as he knows no traps are there
+KNOWN_TO_BE_TRAP_FREE       = Fl(19)   -- keep track of where the player has stepped or watched monsters step as he knows no traps are there
 TELEPATHIC_VISIBLE          = Fl(29)   -- potions of telepathy let you see through other creatures' eyes
 
 -- ~ PERMANENT_TILE_FLAGS = (DISCOVERED | MAGIC_MAPPED | ITEM_DETECTED | HAS_ITEM | HAS_DORMANT_MONSTER
-                        -- ~ | HAS_UP_STAIRS | HAS_DOWN_STAIRS | PRESSURE_PLATE_DEPRESSED
+                        -- ~ | HAS_MONSTER | HAS_STAIRS | SEARCHED_FROM_HERE | PRESSURE_PLATE_DEPRESSED
                         -- ~ | STABLE_MEMORY | KNOWN_TO_BE_TRAP_FREE | IN_LOOP
                         -- ~ | IS_CHOKEPOINT | IS_GATE_SITE | IS_IN_MACHINE | IMPREGNABLE)
 
@@ -122,25 +122,28 @@ MONST_NEVER_MUTATED             = (MONST_INVISIBLE | MONST_INANIMATE | MONST_IMM
 -- monster ability flags
 MA_HIT_HALLUCINATE              = Fl(0)    -- monster can hit to cause hallucinations
 MA_HIT_STEAL_FLEE               = Fl(1)    -- monster can steal an item and then run away
-MA_ENTER_SUMMONS                = Fl(2)    -- monster will "become" its summoned leader, reappearing when that leader is defeated
-MA_HIT_DEGRADE_ARMOR            = Fl(3)    -- monster damages armor
-MA_CAST_SUMMON                  = Fl(4)    -- requires that there be one or more summon hordes with this monster type as the leader
-MA_SEIZES                       = Fl(5)    -- monster seizes enemies before attacking
-MA_POISONS                      = Fl(6)    -- monster's damage is dealt in the form of poison
-MA_DF_ON_DEATH                  = Fl(7)    -- monster spawns its DF when it dies
-MA_CLONE_SELF_ON_DEFEND         = Fl(8)    -- monster splits in two when struck
-MA_KAMIKAZE                     = Fl(9)    -- monster dies instead of attacking
-MA_TRANSFERENCE                 = Fl(10)   -- monster recovers 40 or 90% of the damage that it inflicts as health
-MA_CAUSES_WEAKNESS              = Fl(11)   -- monster attacks cause weakness status in target
-MA_ATTACKS_PENETRATE            = Fl(12)   -- monster attacks all adjacent enemies, like an axe
-MA_ATTACKS_ALL_ADJACENT         = Fl(13)   -- monster attacks penetrate one layer of enemies, like a spear
-MA_ATTACKS_EXTEND               = Fl(14)   -- monster attacks from a distance in a cardinal direction, like a whip
-MA_AVOID_CORRIDORS              = Fl(15)   -- monster will avoid corridors when hunting
+MA_HIT_BURN                     = Fl(2)    -- monster can hit to set you on fire
+MA_ENTER_SUMMONS                = Fl(3)    -- monster will "become" its summoned leader, reappearing when that leader is defeated
+MA_HIT_DEGRADE_ARMOR            = Fl(4)    -- monster damages armor
+MA_CAST_SUMMON                  = Fl(5)    -- requires that there be one or more summon hordes with this monster type as the leader
+MA_SEIZES                       = Fl(6)    -- monster seizes enemies before attacking
+MA_POISONS                      = Fl(7)    -- monster's damage is dealt in the form of poison
+MA_DF_ON_DEATH                  = Fl(8)    -- monster spawns its DF when it dies
+MA_CLONE_SELF_ON_DEFEND         = Fl(9)    -- monster splits in two when struck
+MA_KAMIKAZE                     = Fl(10)    -- monster dies instead of attacking
+MA_TRANSFERENCE                 = Fl(11)   -- monster recovers 40 or 90% of the damage that it inflicts as health
+MA_CAUSES_WEAKNESS              = Fl(12)   -- monster attacks cause weakness status in target
+MA_ATTACKS_PENETRATE            = Fl(13)   -- monster attacks all adjacent enemies, like an axe
+MA_ATTACKS_ALL_ADJACENT         = Fl(14)   -- monster attacks penetrate one layer of enemies, like a spear
+MA_ATTACKS_EXTEND               = Fl(15)   -- monster attacks from a distance in a cardinal direction, like a whip
+MA_ATTACKS_STAGGER              = Fl(16)   -- monster attacks will push the player backward by one space if there is room
+MA_AVOID_CORRIDORS              = Fl(17)   -- monster will avoid corridors when hunting
 
-SPECIAL_HIT                     = (MA_HIT_HALLUCINATE | MA_HIT_STEAL_FLEE | MA_HIT_DEGRADE_ARMOR | MA_POISONS | MA_TRANSFERENCE | MA_CAUSES_WEAKNESS)
+SPECIAL_HIT                     = (MA_HIT_HALLUCINATE | MA_HIT_STEAL_FLEE | MA_HIT_DEGRADE_ARMOR | MA_POISONS
+                                       | MA_TRANSFERENCE | MA_CAUSES_WEAKNESS | MA_HIT_BURN | MA_ATTACKS_STAGGER)
 LEARNABLE_ABILITIES             = (MA_TRANSFERENCE | MA_CAUSES_WEAKNESS)
 
-MA_NON_NEGATABLE_ABILITIES      = (MA_ATTACKS_PENETRATE | MA_ATTACKS_ALL_ADJACENT)
+MA_NON_NEGATABLE_ABILITIES      = (MA_ATTACKS_PENETRATE | MA_ATTACKS_ALL_ADJACENT | MA_ATTACKS_EXTEND | MA_ATTACKS_STAGGER)
 MA_NEVER_VORPAL_ENEMY           = (MA_KAMIKAZE)
 MA_NEVER_MUTATED                = (MA_KAMIKAZE)
 
@@ -151,9 +154,9 @@ MB_CAPTIVE                  = Fl(8)    -- monster is all tied up
 MB_SEIZED                   = Fl(9)    -- monster is being held
 MB_SEIZING                  = Fl(10)   -- monster is holding another creature immobile
 MB_SUBMERGED                = Fl(11)   -- monster is currently submerged and hence invisible until it attacks
-MB_ABSORBING                = Fl(15)   -- currently learning a skill by absorbing an enemy corpse
-MB_HAS_SOUL                 = Fl(21)   -- slaying the monster will count toward weapon auto-ID
-MB_ALREADY_SEEN             = Fl(22)   -- seeing this monster won't interrupt exploration
+MB_ABSORBING                = Fl(16)   -- currently learning a skill by absorbing an enemy corpse
+MB_HAS_SOUL                 = Fl(22)   -- slaying the monster will count toward weapon auto-ID
+MB_ALREADY_SEEN             = Fl(23)   -- seeing this monster won't interrupt exploration
 
 
 -- monster states
@@ -167,6 +170,7 @@ MONSTER_ALLY                    = nexti()
 
 -- creature status effect indices
 i = 0 -- start from 1 as these are table indices
+STATUS_DONNING                  = nexti()
 STATUS_WEAKENED                 = nexti()
 STATUS_TELEPATHIC               = nexti()
 STATUS_HALLUCINATING            = nexti()
@@ -184,6 +188,7 @@ STATUS_IMMUNE_TO_FIRE           = nexti()
 STATUS_EXPLOSION_IMMUNITY       = nexti()
 STATUS_NUTRITION                = nexti()
 STATUS_ENTERS_LEVEL_IN          = nexti()
+STATUS_ENRAGED                  = nexti() -- temporarily ignores normal MA_AVOID_CORRIDORS behavior
 STATUS_MAGICAL_FEAR             = nexti()
 STATUS_ENTRANCED                = nexti()
 STATUS_DARKNESS                 = nexti()
@@ -204,7 +209,7 @@ ITEM_FLAMMABLE          = Fl(10)
 ITEM_MAGIC_DETECTED     = Fl(11)
 ITEM_IS_KEY             = Fl(13)
 
-ITEM_ATTACKS_HIT_SLOWLY = Fl(14)   -- mace, hammer
+ITEM_ATTACKS_STAGGER    = Fl(14)   -- mace, hammer
 ITEM_ATTACKS_EXTEND     = Fl(15)   -- whip
 ITEM_ATTACKS_QUICKLY    = Fl(16)   -- rapier
 ITEM_ATTACKS_PENETRATE  = Fl(17)   -- spear, pike
@@ -432,7 +437,6 @@ ACID_JELLY                      = nexti()
 CENTAUR                         = nexti()
 UNDERWORM                       = nexti()
 SENTINEL                        = nexti()
-ACID_TURRET                     = nexti()
 DART_TURRET                     = nexti()
 KRAKEN                          = nexti()
 LICH                            = nexti()
@@ -578,6 +582,10 @@ STONE_BRIDGE                            = nexti()
 MACHINE_FLOOD_WATER_DORMANT             = nexti()
 MACHINE_FLOOD_WATER_SPREADING           = nexti()
 MACHINE_MUD_DORMANT                     = nexti()
+ICE_DEEP                                = nexti()
+ICE_DEEP_MELT                           = nexti()
+ICE_SHALLOW                             = nexti()
+ICE_SHALLOW_MELT                        = nexti()
 HOLE                                    = nexti()
 HOLE_GLOW                               = nexti()
 HOLE_EDGE                               = nexti()
@@ -659,6 +667,11 @@ PIPE_INERT                              = nexti()
 RESURRECTION_ALTAR                      = nexti()
 RESURRECTION_ALTAR_INERT                = nexti()
 MACHINE_TRIGGER_FLOOR_REPEATING         = nexti()
+SACRIFICE_ALTAR_DORMANT                 = nexti()
+SACRIFICE_ALTAR                         = nexti()
+SACRIFICE_LAVA                          = nexti()
+SACRIFICE_CAGE_DORMANT                  = nexti()
+DEMONIC_STATUE                          = nexti()
 STATUE_INERT_DOORWAY                    = nexti()
 STATUE_DORMANT_DOORWAY                  = nexti()
 CHASM_WITH_HIDDEN_BRIDGE                = nexti()

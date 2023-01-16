@@ -1,9 +1,10 @@
-#ifdef BROGUE_CURSES
 #include <ncurses.h>
 #include "term.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Rogue.h"
+#include <ctype.h>
 
 
 // As a rule, everything in term.c is the result of gradual evolutionary
@@ -45,13 +46,14 @@ pairmode_cell *cell_buffer;
 
 enum {
     coerce_16,
-    coerce_256
+    coerce_256,
+    truecolor
 } colormode;
 
 int is_xterm;
 
 
-// 
+//
 
 static void preparecolor ( ) {
     // sixteen color mode colors (we use these in 256-color mode, too)
@@ -59,8 +61,8 @@ static void preparecolor ( ) {
         COLOR_BLACK, COLOR_RED, COLOR_GREEN, COLOR_YELLOW,
         COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN, COLOR_WHITE
     };
-    
-    int fg, bg; 
+
+    int fg, bg;
     for (bg=0; bg<8; bg++) {
         for (fg=0; fg<8; fg++) {
             init_pair(
@@ -70,8 +72,13 @@ static void preparecolor ( ) {
         }
     }
 
-    if (COLORS >= 256) {
+    char *env = getenv("COLORTERM");
+    if (env && ((strncmp(env, "truecolor", 9) == 0) || (strncmp(env, "24bit", 5) == 0))) {
+        colormode = truecolor;
+    } else if (COLORS >= 256) {
         colormode = coerce_256;
+    } else {
+        colormode = coerce_16;
     }
 }
 
@@ -102,7 +109,7 @@ static void term_set_size(int h, int w) {
         // then try resizing both, in case we can
         printf ("\033[8;%d;%dt", h, w);
 
-        // then refresh so ncurses knows about it 
+        // then refresh so ncurses knows about it
         refresh( );
     }
 }
@@ -118,18 +125,9 @@ static void term_show_scrollbar(int show) {
     }
 }
 
-static void term_enable_bracketed_paste( ) {
-    if (is_xterm) {
-        printf ("\033[2004h");
-    }
-    // now pasted text will come in as
-    // \033[200~%s\033[201~
-    // so we can use that to receive seeds or filenames or whatever
-}
-
 static int curses_init( ) {
     if (videomode.curses) return 0;
-    
+
     // isterm?
     initscr( );
     if (!has_colors( )) {
@@ -144,8 +142,9 @@ static int curses_init( ) {
     refresh( );
     leaveok(stdscr, TRUE);
     preparecolor( );
-    cbreak( );
+    raw( );
     noecho( );
+    nonl( );
 
     nodelay(stdscr, TRUE);
     meta(stdscr, TRUE);
@@ -153,7 +152,7 @@ static int curses_init( ) {
 
     mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED | REPORT_MOUSE_POSITION | BUTTON_SHIFT | BUTTON_CTRL, NULL);
     mouseinterval(0); //do no click processing, thank you
-    
+
     videomode.curses = 1;
 
     getmaxyx(stdscr, Term.height, Term.width);
@@ -231,7 +230,7 @@ static CIE toCIE(fcolor c) {
     c.r = c.r <= 0.04045 ? c.r / 12.92 : pow((c.r + a) / (1 + a), 2.4);
     c.g = c.g <= 0.04045 ? c.g / 12.92 : pow((c.g + a) / (1 + a), 2.4);
     c.b = c.b <= 0.04045 ? c.b / 12.92 : pow((c.b + a) / (1 + a), 2.4);
-    
+
     CIE cie;
     cie.X = 0.4124 * c.r + 0.3576 * c.g + 0.1805 * c.b;
     cie.Y = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
@@ -283,17 +282,6 @@ static float CIE76(Lab *L1, Lab *L2) {
     return sqrt(lbias * SQUARE(L2->L - L1->L) + SQUARE(L2->a - L1->a) + SQUARE(L2->b - L1->b));
 }
 
-static float CIExyY(CIE *L1, CIE *L2) {
-    // this does a good job of estimating the difference between two colors, ignoring brightness
-    return sqrt(SQUARE(L2->x - L1->x) + SQUARE(L2->y - L1->y));
-}
-
-static float adamsDistance(CIE *v1, CIE *v2) {
-    // not really the right metric, this
-    // return sqrt(SQUARE(v2->X - v1->X) + SQUARE(v2->Y - v1->Y) + SQUARE(v2->Z - v1->Z));
-    return sqrt(SQUARE(v2->X - v1->X) + SQUARE(v2->Y - v1->Y) + SQUARE(v2->Z - v1->Z));
-}
-
 static void init_coersion() {
     fcolor sRGB_white = (fcolor) {1, 1, 1};
     white = toCIE(sRGB_white);
@@ -320,7 +308,7 @@ static int best (fcolor *fg, fcolor *bg) {
     Lab labBg = toLab(&cieBg);
     // CIE adamsFg = adams(&cieFg);
     // CIE adamsBg = adams(&cieBg);
-    
+
     float JND = 2.3; // just-noticeable-difference
     int areTheSame = CIE76(&labFg, &labBg) <= 2.0 * JND; // a little extra fudge
 
@@ -372,29 +360,6 @@ static int best (fcolor *fg, fcolor *bg) {
     }
 }
 
-static int coerce (fcolor *color, float dark, float saturation, float brightcut, float grey) {
-    float bright = color->r;
-    if (color->g > bright) bright = color->g;
-    if (color->b > bright) bright = color->b;
-    if (bright < dark) {
-        if (bright > grey) {
-            return 8;
-        }
-        return 0;
-    }
-    float cut = bright * saturation;
-
-    int r = color->r > cut, g = color->g > cut, b = color->b > cut;
-    return r + g * 2 + b * 4 + ((bright > brightcut) ? 8 : 0);
-}
-
-static int coerce_color (fcolor *fg, fcolor *bg) {
-    int f = coerce(fg, 0.3, 0.8, .80, .1);
-    int b = 7 & coerce(bg, 0.3, 0.35, 1, 0);
-    if (f == b) f ^= 8;
-    return COLORING(f, b);
-}
-
 
 
 
@@ -414,7 +379,7 @@ static void coerce_colorcube (fcolor *f, intcolor *c) {
     // 232-255 are a greyscale ramp without black and white.
 
     float sat = 0.2, bright = 0.6, contrast = 6.3;
-    
+
     float rf = bright + f->r * contrast,
         gf = bright + f->g * contrast,
         bf = bright + f->b * contrast;
@@ -427,7 +392,7 @@ static void coerce_colorcube (fcolor *f, intcolor *c) {
     r = r < 0 ? 0 : r > 5 ? 5 : r;
     g = g < 0 ? 0 : g > 5 ? 5 : g;
     b = b < 0 ? 0 : b > 5 ? 5 : b;
-    
+
     c->r = r;
     c->g = g;
     c->b = b;
@@ -453,7 +418,7 @@ static int coerce_prs (intcolor *fg, intcolor *bg) {
         }
         pair = prs[pair].next;
     }
-    
+
     // no exact match? try to insert it as a new one
     pair = prs[0].next;
     if (pair) {
@@ -465,17 +430,17 @@ static int coerce_prs (intcolor *fg, intcolor *bg) {
         // insert at the front
         prs[pair].next = prs[1].next;
         prs[1].next = pair;
-        
+
         // initialize it
         prs[pair].fore = *fg;
         prs[pair].back = *bg;
         prs[pair].count = 1;
 
         init_pair(pair, fg->idx, bg->idx);
-        
+
         return pair;
     }
-    
+
     // search for an approximate match in the list
     int bestpair = 0, bestscore = 2 * 3 * 6 * 6; // naive distance metric for now
     pair = prs[1].next;
@@ -496,7 +461,7 @@ static int coerce_prs (intcolor *fg, intcolor *bg) {
 static void buffer_plot(int ch, int x, int y, fcolor *fg, fcolor *bg) {
     // int pair = 256 + x + y * minsize.width;
     // intcolor cube_fg, cube_bg;
-    // coerce_colorcube(fg, &cube_fg), 
+    // coerce_colorcube(fg, &cube_fg),
     // coerce_colorcube(bg, &cube_bg);
 
     // pair = cube_bg.idx;
@@ -509,20 +474,33 @@ static void buffer_plot(int ch, int x, int y, fcolor *fg, fcolor *bg) {
 
     intcolor cube_fg, cube_bg;
 
-    coerce_colorcube(fg, &cube_fg);
-    coerce_colorcube(bg, &cube_bg);
-    if (cube_fg.idx == cube_bg.idx) {
-        // verify that the colors are really the same; otherwise, we'd better force the output apart
-        int naive_distance =
-            (fg->r - bg->r) * (fg->r - bg->r)
-            + (fg->g - bg->g) * (fg->g - bg->g)
-            + (fg->b - bg->b) * (fg->b - bg->b);
-        if (naive_distance > 3) {
-            // very arbitrary cutoff, and an arbitrary fix, very lazy
-            if (cube_bg.r > 0) {cube_bg.r -= 1; cube_bg.idx -= 1; } 
-            if (cube_bg.g > 0) {cube_bg.g -= 1; cube_bg.idx -= 6; } 
-            if (cube_bg.b > 0) {cube_bg.b -= 1; cube_bg.idx -= 36; } 
+    if (colormode == coerce_256) {
+        coerce_colorcube(fg, &cube_fg);
+        coerce_colorcube(bg, &cube_bg);
+        if (cube_fg.idx == cube_bg.idx) {
+            // verify that the colors are really the same; otherwise, we'd better force the output apart
+            int naive_distance =
+                (fg->r - bg->r) * (fg->r - bg->r)
+                + (fg->g - bg->g) * (fg->g - bg->g)
+                + (fg->b - bg->b) * (fg->b - bg->b);
+            if (naive_distance > 3) {
+                // very arbitrary cutoff, and an arbitrary fix, very lazy
+                if (cube_bg.r > 0) {cube_bg.r -= 1; cube_bg.idx -= 1; }
+                if (cube_bg.g > 0) {cube_bg.g -= 1; cube_bg.idx -= 6; }
+                if (cube_bg.b > 0) {cube_bg.b -= 1; cube_bg.idx -= 36; }
+            }
         }
+    } else {
+        cube_fg = (intcolor){
+            .r = round(fg->r * 255),
+            .g = round(fg->g * 255),
+            .b = round(fg->b * 255)
+        };
+        cube_bg = (intcolor){
+            .r = round(bg->r * 255),
+            .g = round(bg->g * 255),
+            .b = round(bg->b * 255)
+        };
     }
 
     int cell = x + y * minsize.width;
@@ -545,7 +523,7 @@ static void buffer_render_256() {
     for (i = length - 1; i >= 0; i--) {
         // int roll = i == 0 ? 0 : rand() % i;
         // idx = cell_buffer[roll].shuffle;
-        
+
         // cell_buffer[roll].shuffle = cell_buffer[i].shuffle;
 
         idx = i;
@@ -564,6 +542,51 @@ static void buffer_render_256() {
             i++;
         }
     }
+    refresh();
+}
+
+static int fullRefresh = 1; // screen needs a full refresh
+
+static void buffer_render_24bit() {
+    int cx, cy;      // cursor coordinates
+    intcolor fg, bg; // current colors
+
+    cx = cy = fg.r = fg.g = fg.b = bg.r = bg.g = bg.b = -1;
+
+    for (int y = 0; y < minsize.height; y++) {
+        for (int x = 0; x < minsize.width; x++) {
+            pairmode_cell *c = &cell_buffer[x + y * minsize.width];
+
+            // `pair` is set to -1 when a tile changes, which signals we need to print it
+            if (!c->pair && !fullRefresh) continue;
+            c->pair = 0;
+
+            // change background color
+            if (c->back.r != bg.r || c->back.g != bg.g || c->back.b != bg.b) {
+                bg = c->back;
+                printf("\033[48;2;%d;%d;%dm", bg.r, bg.g, bg.b);
+            }
+
+            // change foreground color (doesn't matter for whitespace)
+            if (c->ch != ' ' && (fg.r != c->fore.r || fg.g != c->fore.g || fg.b != c->fore.b)) {
+                fg = c->fore;
+                printf("\033[38;2;%d;%d;%dm", fg.r, fg.g, fg.b);
+            }
+
+            // move cursor if necessary
+            if (cx != x || cy != y) {
+                cx = x, cy = y;
+                printf("\033[%d;%df", cy+1, cx+1);
+            }
+
+            // print the character
+            printf("%c", c->ch);
+            cx++;
+        }
+    }
+
+    fflush(stdout);
+    fullRefresh = 0;
 }
 
 static void term_mvaddch(int x, int y, int ch, fcolor *fg, fcolor *bg) {
@@ -604,12 +627,13 @@ static void term_refresh() {
         }
     }
 
-
-    if (colormode == coerce_256) {
+    if (colormode == truecolor) {
+        buffer_render_24bit();
+    } else if (colormode == coerce_256) {
         buffer_render_256();
+    } else if (colormode == coerce_16) {
+        refresh();
     }
-
-    refresh();
 }
 
 static void ensure_size( );
@@ -623,6 +647,7 @@ static int term_getkey( ) {
         int got = getch();
         if (got == KEY_RESIZE) {
             ensure_size( );
+            fullRefresh = 1;
         } else if (got == KEY_MOUSE) {
             MEVENT mevent;
             getmouse (&mevent);
@@ -678,15 +703,12 @@ static void ensure_size( ) {
 
             attrset(COLOR_ATTR(7));
             mvprintw(3,0,"Press ctrl-c at any time to quit.\n");
-#ifdef BROGUE_TCOD
-            mvprintw(5,0,"To use libtcod, start the game with the -gl or --SDL.\n\n");
-#endif
 
             printw("Width:  %d/%d\n", Term.width, w);
             printw("Height: %d/%d\n", Term.height, h);
 
             mvprintw(10, 0, "Colors (pairs): %d (%d)\n", COLORS, COLOR_PAIRS);
-            
+
             getch();
             getmaxyx(stdscr, Term.height, Term.width);
         }
@@ -864,8 +886,36 @@ int term_keycodeByName(const char *name) {
         }
         i++;
     }
-    
+
     return name[0];
+}
+
+static int term_ctrlPressed(int* key) {
+    // The keycode representing the enter key depends on curses initialization settings. With the
+    // current settings, it's represented as 13, so return `RETURN_KEY` instead.
+    if (*key == 13) {
+        *key = RETURN_KEY;
+        return 0;
+    }
+    if (*key == '\t') { // Tab is represented as "^I"
+        return 0;
+    }
+    const char* str = keyname(*key);
+    if (str == NULL) {
+        return 0;
+    }
+    if (strlen(str) == 2 && str[0] == '^' && isalpha(str[1])) {
+        // Curses doesn't distinguish between `ctrl-A` and `ctrl-shift-A`, so this special case is
+        // needed for autopilot to work.
+        if (str[1] == 'A') {
+            *key = 'A';
+        } else {
+            *key = tolower(str[1]);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -880,7 +930,6 @@ struct term_t Term = {
     term_title,
     term_resize,
     term_keycodeByName,
+    term_ctrlPressed,
     {KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_BACKSPACE, KEY_DC, KEY_F(12)}
 };
-#endif
-

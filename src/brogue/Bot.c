@@ -122,13 +122,13 @@ static lua_Integer checkCell(lua_State *L, int i) {
 }
 
 static enum tileType hideSecrets(enum tileType tt) {
-    char ch = tileCatalog[tt].displayChar;
+    enum displayGlyph ch = tileCatalog[tt].displayChar;
     char *desc = tileCatalog[tt].description;
 
     // weak but general check for secret tiles
-    if (ch == WALL_CHAR && strcmp(desc, "a stone wall") == 0) {
+    if (ch == G_WALL && strcmp(desc, "a stone wall") == 0) {
         return WALL;
-    } else if (ch == FLOOR_CHAR && strcmp(desc, "the ground") == 0) {
+    } else if (ch == G_FLOOR && strcmp(desc, "the ground") == 0) {
         return FLOOR;
     } else if (ch == 0 && strcmp(desc, tileCatalog[SHALLOW_WATER].description) == 0) {
         return SHALLOW_WATER;
@@ -139,14 +139,14 @@ static enum tileType hideSecrets(enum tileType tt) {
 
 // push an item table onto the Lua stack. the existence of item is assumed to be somehow known.
 static void pushItem(lua_State *L, item *it) {
-    boolean carried = itemIsCarried(it), visible = carried || playerCanSee(it->xLoc, it->yLoc);
+    boolean carried = itemIsCarried(it), visible = carried || playerCanSee(it->loc.x, it->loc.y);
 
     lua_newtable(L);
 
-    uchar magicChar = itemMagicChar(it);
-    if (magicChar != 0 && (it->flags & ITEM_MAGIC_DETECTED)) {
+    int magicPolarity = itemMagicPolarity(it);
+    if (magicPolarity != 0 && (it->flags & ITEM_MAGIC_DETECTED)) {
         lua_pushboolean(L, true);
-        lua_setfield(L, -2, (magicChar == GOOD_MAGIC_CHAR ? "blessed" : "cursed"));
+        lua_setfield(L, -2, (magicPolarity == 1 ? "blessed" : "cursed"));
     }
 
     if (carried) {
@@ -154,7 +154,7 @@ static void pushItem(lua_State *L, item *it) {
         lua_pushstring(L, letter);
         lua_setfield(L, -2, "letter");
     } else {
-        lua_pushinteger(L, DROWS * it->xLoc + it->yLoc + 1);
+        lua_pushinteger(L, DROWS * it->loc.x + it->loc.y + 1);
         lua_setfield(L, -2, "cell");
     }
 
@@ -207,8 +207,8 @@ static void pushItem(lua_State *L, item *it) {
             lua_setfield(L, -2, "maxbasedamage");
 
             float power = flags & ITEM_IDENTIFIED ? netEnchant(it) : strengthModifier(it);
-            float dmgfactor = pow(WEAPON_ENCHANT_DAMAGE_FACTOR, power),
-                  accfactor = pow(WEAPON_ENCHANT_ACCURACY_FACTOR, power);
+            float dmgfactor = damageFraction(power) / FP_FACTOR,
+                  accfactor = accuracyFraction(power) / FP_FACTOR;
 
             lua_pushinteger(L, it->damage.lowerBound * dmgfactor);
             lua_setfield(L, -2, "mindamage");
@@ -271,7 +271,7 @@ static void pushItem(lua_State *L, item *it) {
         lua_pushinteger(L, it->quantity);
         lua_setfield(L, -2, "quantity");
 
-        itemTable *table = tableForItemCategory(c, NULL);
+        itemTable *table = tableForItemCategory(c);
         if (table != NULL) {
             table = &table[it->kind];
 
@@ -290,8 +290,7 @@ static short creatureAccuracy(creature *cr) {
     if (cr == &player && rogue.weapon) {
         float ench = rogue.weapon->flags & ITEM_IDENTIFIED ?
             netEnchant(rogue.weapon) : strengthModifier(rogue.weapon);
-        return player.info.accuracy *
-            pow(WEAPON_ENCHANT_ACCURACY_FACTOR, ench + FLOAT_FUDGE);
+        return player.info.accuracy * accuracyFraction(ench) / FP_FACTOR;
     } else {
         return monsterAccuracyAdjusted(cr);
     }
@@ -304,7 +303,7 @@ static short playerKnownDefense() {
     } else {
         short def =
             (armorTable[rogue.armor->kind].range.upperBound + armorTable[rogue.armor->kind].range.lowerBound) / 2 +
-            10 * (strengthModifier(rogue.armor) - player.status[STATUS_DONNING] + FLOAT_FUDGE);
+            10 * (strengthModifier(rogue.armor) / FP_FACTOR - player.status[STATUS_DONNING] * FP_FACTOR);
         if (def < 0) def = 0;
         return def;
     }
@@ -317,7 +316,7 @@ static short playerKnownDefense() {
 static void pushCreature(lua_State *L, creature *cr) {
     lua_newtable(L);
 
-    lua_pushinteger(L, cr->xLoc * DROWS + cr->yLoc + 1);
+    lua_pushinteger(L, cr->loc.x * DROWS + cr->loc.y + 1);
     lua_setfield(L, -2, "cell");
 
     // psychic emanation
@@ -452,8 +451,8 @@ static int l_iskindknown(lua_State *L) {
     enum itemCategory cat = luaL_checkinteger(L, 1);
     short kind = luaL_checkinteger(L, 2);
 
-    short nkinds;
-    itemTable *table = tableForItemCategory(cat, &nkinds);
+    short nkinds = itemKindCount(cat, 0);
+    itemTable *table = tableForItemCategory(cat);
     if (!table) {
         // invalid category (gold, lumenstone or amulet); just return true
         lua_pushboolean(L, true);
@@ -546,9 +545,9 @@ static int l_getitems(lua_State *L) {
 
     for (item *it = floorItems->nextItem; it != NULL; it = it->nextItem) {
         // only give info on items that can be seen or are magic-detected
-        if (!playerCanSee(it->xLoc, it->yLoc) && !(it->flags & ITEM_MAGIC_DETECTED)) continue;
+        if (!playerCanSee(it->loc.x, it->loc.y) && !(it->flags & ITEM_MAGIC_DETECTED)) continue;
         pushItem(L, it);
-        lua_seti(L, -2, it->xLoc * DROWS + it->yLoc + 1);
+        lua_seti(L, -2, it->loc.x * DROWS + it->loc.y + 1);
     }
     return 1;
 }
@@ -556,15 +555,17 @@ static int l_getitems(lua_State *L) {
 static int l_getcreatures(lua_State *L) {
     lua_newtable(L);
 
-    for (creature *cr = monsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
+    for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+        creature *cr = nextCreature(&it);
         if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
         pushCreature(L, cr);
-        lua_seti(L, -2, cr->xLoc * DROWS + cr->yLoc + 1);
+        lua_seti(L, -2, cr->loc.x * DROWS + cr->loc.y + 1);
     }
-    for (creature *cr = dormantMonsters->nextCreature; cr != NULL; cr = cr->nextCreature) {
+    for (creatureIterator it = iterateCreatures(dormantMonsters); hasNextCreature(it);) {
+        creature *cr = nextCreature(&it);
         if (!(canSeeMonster(cr) || monsterRevealed(cr))) continue;
         pushCreature(L, cr);
-        lua_seti(L, -2, cr->xLoc * DROWS + cr->yLoc + 1);
+        lua_seti(L, -2, cr->loc.x * DROWS + cr->loc.y + 1);
     }
 
     return 1;
@@ -579,7 +580,7 @@ static int l_getplayer(lua_State *L) {
     lua_setfield(L, -2, "turn");
     lua_pushinteger(L, rogue.strength);
     lua_setfield(L, -2, "strength");
-    lua_pushinteger(L, rogue.aggroRange);
+    lua_pushinteger(L, rogue.stealthRange);
     lua_setfield(L, -2, "stealthrange");
 
     lua_pushinteger(L, botAction);

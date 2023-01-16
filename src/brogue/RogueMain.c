@@ -4,7 +4,7 @@
  *
  *  Created by Brian Walker on 12/26/08.
  *  Copyright 2012. All rights reserved.
- *  
+ *
  *  This file is part of Brogue.
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,12 +23,11 @@
 
 #include "Rogue.h"
 #include "IncludeGlobals.h"
-#include <math.h>
 #include <time.h>
+
 
 void rogueMain() {
     previousGameSeed = 0;
-    initializeBrogueSaveLocation();
     mainBrogueJunction();
 }
 
@@ -56,7 +55,7 @@ boolean fileExists(const char *pathname) {
 // Player specifies a file; if all goes well, put it into path and return true.
 // Otherwise, return false.
 boolean chooseFile(char *path, char *prompt, char *defaultName, char *suffix) {
-    
+
     if (getInputTextString(path,
                            prompt,
                            min(DCOLS-25, BROGUE_FILENAME_MAX - strlen(suffix)),
@@ -65,7 +64,7 @@ boolean chooseFile(char *path, char *prompt, char *defaultName, char *suffix) {
                            TEXT_INPUT_FILENAME,
                            false)
         && path[0] != '\0') {
-        
+
         strcat(path, suffix);
         return true;
     } else {
@@ -80,18 +79,18 @@ boolean openFile(const char *path) {
     short i;
     char buf[BROGUE_FILENAME_MAX];
     boolean retval;
-    
+
     if (fileExists(path)) {
-        
+
         strcpy(currentFilePath, path);
         annotationPathname[0] = '\0';
-        
+
         // Clip off the suffix.
         strcpy(buf, path);
         for (i = strlen(path); buf[i] != '.' && i > 0; i--) continue;
         if (buf[i] == '.'
             && i + strlen(ANNOTATION_SUFFIX) < BROGUE_FILENAME_MAX) {
-            
+
             buf[i] = '\0'; // Snip!
             strcat(buf, ANNOTATION_SUFFIX);
             strcpy(annotationPathname, buf); // Load the annotations file too.
@@ -100,15 +99,15 @@ boolean openFile(const char *path) {
     } else {
         retval = false;
     }
-    
+
     return retval;
 }
 
 void benchmark() {
     short i, j, k;
     const color sparklesauce = {10, 0, 20,  60, 40, 100, 30, true};
-    uchar theChar;
-    
+    enum displayGlyph theChar;
+
     unsigned long initialTime = (unsigned long) time(NULL);
     for (k=0; k<500; k++) {
         for (i=0; i<COLS; i++) {
@@ -124,165 +123,110 @@ void benchmark() {
 
 void welcome() {
     char buf[DCOLS*3], buf2[DCOLS*3];
-    message("Hello and welcome, adventurer, to the Dungeons of Doom!", false);
+    message("Hello and welcome, adventurer, to the Dungeons of Doom!", 0);
     strcpy(buf, "Retrieve the ");
     encodeMessageColor(buf, strlen(buf), &itemMessageColor);
     strcat(buf, "Amulet of Yendor");
     encodeMessageColor(buf, strlen(buf), &white);
     sprintf(buf2, " from the %ith floor and escape with it!", AMULET_LEVEL);
     strcat(buf, buf2);
-    message(buf, false);
+    message(buf, 0);
     if (KEYBOARD_LABELS) {
-        messageWithColor("Press <?> for help at any time.", &backgroundMessageColor, false);
+        messageWithColor("Press <?> for help at any time.", &backgroundMessageColor, 0);
     }
     flavorMessage("The doors to the dungeon slam shut behind you.");
-}
-
-void generateFontFiles() {
-    short i, j;
-    uchar k;
-    
-    uchar c8[16] = {
-        FLOOR_CHAR,
-        CHASM_CHAR,
-        TRAP_CHAR,
-        FIRE_CHAR,
-        FOLIAGE_CHAR,
-        AMULET_CHAR,
-        SCROLL_CHAR,
-        RING_CHAR,
-        WEAPON_CHAR,
-        GEM_CHAR,
-        TOTEM_CHAR,
-        TURRET_CHAR,
-        BAD_MAGIC_CHAR,
-        GOOD_MAGIC_CHAR,
-        ' ',
-        ' ',
-    };
-    uchar c9[16] = {
-        UP_ARROW_CHAR,
-        DOWN_ARROW_CHAR,
-        LEFT_ARROW_CHAR,
-        RIGHT_ARROW_CHAR,
-        UP_TRIANGLE_CHAR,
-        DOWN_TRIANGLE_CHAR,
-        OMEGA_CHAR,
-        THETA_CHAR,
-        LAMDA_CHAR,
-        KOPPA_CHAR,
-        LOZENGE_CHAR,
-        CROSS_PRODUCT_CHAR,
-        ' ',
-        ' ',
-        ' ',
-        ' ',
-    };
-    
-    for (i=0; i<COLS; i++) {
-        for(j=0; j<ROWS; j++ ) {
-            plotCharWithColor(' ', i, j, &white, &white);
-        }
-    }
-    i = j = 0;
-    for (k=0; k<256; k++) {
-        i = k % 16;
-        j = k / 16;
-        if (j >= ROWS) {
-            break;
-        }
-        if (j == 8) {
-            plotCharWithColor(c8[i], i, j+5, &white, &black);
-        } else if (j == 9) {
-            plotCharWithColor(c9[i], i, j+5, &white, &black);
-        } else {
-            plotCharWithColor(k, i, j+5, &white, &black);
-        }
-    }
-    for (;;) {
-        waitForAcknowledgment();
-    }
 }
 
 // Seed is used as the dungeon seed unless it's zero, in which case generate a new one.
 // Either way, previousGameSeed is set to the seed we use.
 // None of this seed stuff is applicable if we're playing a recording.
-void initializeRogue(unsigned long seed) {
+void initializeRogue(uint64_t seed) {
     short i, j, k;
     item *theItem;
-    boolean playingback, playbackFF, playbackPaused;
+    boolean playingback, playbackFF, playbackPaused, wizard, displayStealthRangeMode;
+    boolean trueColorMode;
     short oldRNG;
-    
-    // generate libtcod font bitmap
-    // add any new unicode characters here to include them
-#ifdef GENERATE_FONT_FILES
-    generateFontFiles();
-#endif
 
-    playingback = rogue.playbackMode; // the only three animals that need to go on the ark
+    playingback = rogue.playbackMode; // the only animals that need to go on the ark
     playbackPaused = rogue.playbackPaused;
     playbackFF = rogue.playbackFastForward;
+    wizard = rogue.wizard;
+    displayStealthRangeMode = rogue.displayStealthRangeMode;
+    trueColorMode = rogue.trueColorMode;
     memset((void *) &rogue, 0, sizeof( playerCharacter )); // the flood
     rogue.playbackMode = playingback;
     rogue.playbackPaused = playbackPaused;
     rogue.playbackFastForward = playbackFF;
-    
+    rogue.wizard = wizard;
+    rogue.displayStealthRangeMode = displayStealthRangeMode;
+    rogue.trueColorMode = trueColorMode;
+
     rogue.gameHasEnded = false;
+    rogue.gameInProgress = true;
     rogue.highScoreSaved = false;
     rogue.cautiousMode = false;
     rogue.milliseconds = 0;
-    
+
     rogue.RNG = RNG_SUBSTANTIVE;
     if (!rogue.playbackMode) {
         rogue.seed = seedRandomGenerator(seed);
         previousGameSeed = rogue.seed;
     }
-    
+
     //benchmark();
-    
+
     initRecording();
-    
+
     levels = malloc(sizeof(levelData) * (DEEPEST_LEVEL+1));
-    levels[0].upStairsLoc[0] = (DCOLS - 1) / 2 - 1;
-    levels[0].upStairsLoc[1] = DROWS - 2;
-    
+    levels[0].upStairsLoc.x = (DCOLS - 1) / 2 - 1;
+    levels[0].upStairsLoc.y = DROWS - 2;
+
     // reset enchant and gain strength frequencies
     rogue.lifePotionFrequency = 0;
     rogue.strengthPotionFrequency = 40;
     rogue.enchantScrollFrequency = 60;
-    
+
     // all DF messages are eligible for display
     resetDFMessageEligibility();
-    
+
     // initialize the levels list
     for (i=0; i<DEEPEST_LEVEL+1; i++) {
-        levels[i].levelSeed = (unsigned long) rand_range(0, 9999);
-        levels[i].levelSeed += (unsigned long) 10000 * rand_range(0, 9999);
-        levels[i].monsters = NULL;
-        levels[i].dormantMonsters = NULL;
+        if (rogue.seed >> 32) {
+            // generate a 64-bit seed
+            levels[i].levelSeed = rand_64bits();
+        } else {
+            // backward-compatible seed
+            levels[i].levelSeed = (unsigned long) rand_range(0, 9999);
+            levels[i].levelSeed += (unsigned long) 10000 * rand_range(0, 9999);
+        }
+        if (levels[i].levelSeed == 0) { // seed 0 is not acceptable
+            levels[i].levelSeed = i + 1;
+        }
+        levels[i].monsters = createCreatureList();;
+        levels[i].dormantMonsters = createCreatureList();;
         levels[i].items = NULL;
+        levels[i].scentMap = NULL;
         levels[i].visited = false;
-        levels[i].playerExitedVia[0] = 0;
-        levels[i].playerExitedVia[1] = 0;
+        levels[i].playerExitedVia = (pos){ .x = 0, .y = 0 };
         do {
-            levels[i].downStairsLoc[0] = rand_range(1, DCOLS - 2);
-            levels[i].downStairsLoc[1] = rand_range(1, DROWS - 2);
-        } while (distanceBetween(levels[i].upStairsLoc[0], levels[i].upStairsLoc[1],
-                                 levels[i].downStairsLoc[0], levels[i].downStairsLoc[1]) < DCOLS / 3);
+            levels[i].downStairsLoc.x = rand_range(1, DCOLS - 2);
+            levels[i].downStairsLoc.y = rand_range(1, DROWS - 2);
+        } while (distanceBetween(levels[i].upStairsLoc.x, levels[i].upStairsLoc.y,
+                                 levels[i].downStairsLoc.x, levels[i].downStairsLoc.y) < DCOLS / 3);
         if (i < DEEPEST_LEVEL) {
-            levels[i+1].upStairsLoc[0] = levels[i].downStairsLoc[0];
-            levels[i+1].upStairsLoc[1] = levels[i].downStairsLoc[1];
+            levels[i+1].upStairsLoc.x = levels[i].downStairsLoc.x;
+            levels[i+1].upStairsLoc.y = levels[i].downStairsLoc.y;
         }
     }
-    
+
     // initialize the waypoints list
     for (i=0; i<MAX_WAYPOINT_COUNT; i++) {
         rogue.wpDistance[i] = allocGrid();
         fillGrid(rogue.wpDistance[i], 0);
     }
-    
+
     rogue.rewardRoomsGenerated = 0;
-    
+
     // pre-shuffle the random terrain colors
     oldRNG = rogue.RNG;
     rogue.RNG = RNG_COSMETIC;
@@ -295,75 +239,63 @@ void initializeRogue(unsigned long seed) {
         }
     }
     restoreRNG;
-    
+
     zeroOutGrid(displayDetail);
-    
+
     for (i=0; i<NUMBER_MONSTER_KINDS; i++) {
         monsterCatalog[i].monsterID = i;
     }
-    
+
     shuffleFlavors();
-    
+
     for (i = 0; i < FEAT_COUNT; i++) {
         rogue.featRecord[i] = featTable[i].initialValue;
     }
-    
+
     deleteMessages();
-    for (i = 0; i < MESSAGE_ARCHIVE_LINES; i++) { // Clear the message archive.
-        messageArchive[i][0] = '\0';
+    for (i = 0; i < MESSAGE_ARCHIVE_ENTRIES; i++) { // Clear the message archive.
+        messageArchive[i].message[0] = '\0';
     }
     messageArchivePosition = 0;
-    
+
     // Seed the stacks.
     floorItems = (item *) malloc(sizeof(item));
     memset(floorItems, '\0', sizeof(item));
     floorItems->nextItem = NULL;
-    
+
     packItems = (item *) malloc(sizeof(item));
     memset(packItems, '\0', sizeof(item));
     packItems->nextItem = NULL;
-    
+
     monsterItemsHopper = (item *) malloc(sizeof(item));
     memset(monsterItemsHopper, '\0', sizeof(item));
     monsterItemsHopper->nextItem = NULL;
-    
+
     for (i = 0; i < MAX_ITEMS_IN_MONSTER_ITEMS_HOPPER; i++) {
         theItem = generateItem(ALL_ITEMS & ~FOOD, -1); // Monsters can't carry food: the food clock cannot be cheated!
         theItem->nextItem = monsterItemsHopper->nextItem;
         monsterItemsHopper->nextItem = theItem;
     }
-    
-    monsters = (creature *) malloc(sizeof(creature));
-    memset(monsters, '\0', sizeof(creature));
-    monsters->nextCreature = NULL;
-    
-    dormantMonsters = (creature *) malloc(sizeof(creature));
-    memset(dormantMonsters, '\0', sizeof(creature));
-    dormantMonsters->nextCreature = NULL;
-    
-    graveyard = (creature *) malloc(sizeof(creature));
-    memset(graveyard, '\0', sizeof(creature));
-    graveyard->nextCreature = NULL;
-    
-    purgatory = (creature *) malloc(sizeof(creature));
-    memset(purgatory, '\0', sizeof(creature));
-    purgatory->nextCreature = NULL;
-    
+
+    monsters = &levels[0].monsters;
+    dormantMonsters = &levels[0].dormantMonsters;
+    purgatory = createCreatureList();
+
     scentMap            = NULL;
     safetyMap           = allocGrid();
     allySafetyMap       = allocGrid();
     chokeMap            = allocGrid();
-    
+
     rogue.mapToSafeTerrain = allocGrid();
-    
+
     // Zero out the dynamic grids, as an essential safeguard against OOSes:
     fillGrid(safetyMap, 0);
     fillGrid(allySafetyMap, 0);
     fillGrid(chokeMap, 0);
     fillGrid(rogue.mapToSafeTerrain, 0);
-    
+
     // initialize the player
-    
+
     memset(&player, '\0', sizeof(creature));
     player.info = monsterCatalog[0];
     initializeGender(&player);
@@ -373,17 +305,16 @@ void initializeRogue(unsigned long seed) {
     player.carriedItem = NULL;
     player.status[STATUS_NUTRITION] = player.maxStatus[STATUS_NUTRITION] = STOMACH_SIZE;
     player.currentHP = player.info.maxHP;
-    rogue.previousHealthPercent = 100;
-    rogue.previousPoisonPercent = 0;
     player.creatureState = MONSTER_ALLY;
     player.ticksUntilTurn = 0;
     player.mutationIndex = -1;
-    
+
     rogue.depthLevel = 1;
     rogue.deepestLevel = 1;
     rogue.scentTurnNumber = 1000;
     rogue.playerTurnNumber = 0;
     rogue.absoluteTurnNumber = 0;
+    rogue.previousPoisonPercent = 0;
     rogue.foodSpawned = 0;
     rogue.lifePotionsSpawned = 0;
     rogue.gold = 0;
@@ -392,6 +323,7 @@ void initializeRogue(unsigned long seed) {
     rogue.autoPlayingLevel = false;
     rogue.automationActive = false;
     rogue.justRested = false;
+    rogue.justSearched = false;
     rogue.easyMode = false;
     rogue.inWater = false;
     rogue.creaturesWillFlashThisTurn = false;
@@ -404,57 +336,65 @@ void initializeRogue(unsigned long seed) {
     rogue.armor = NULL;
     rogue.ringLeft = NULL;
     rogue.ringRight = NULL;
+    rogue.swappedIn = NULL;
+    rogue.swappedOut = NULL;
     rogue.monsterSpawnFuse = rand_range(125, 175);
     rogue.ticksTillUpdateEnvironment = 100;
     rogue.mapToShore = NULL;
-    rogue.cursorLoc[0] = rogue.cursorLoc[1] = -1;
+    rogue.cursorLoc = (pos) { .x = -1, .y = -1 };
     rogue.xpxpThisTurn = 0;
-    
+
     rogue.yendorWarden = NULL;
-    
+
     rogue.flares = NULL;
     rogue.flareCount = rogue.flareCapacity = 0;
-    
+
     rogue.minersLight = lightCatalog[MINERS_LIGHT];
-    
+
     rogue.clairvoyance = rogue.regenerationBonus
     = rogue.stealthBonus = rogue.transference = rogue.wisdomBonus = rogue.reaping = 0;
     rogue.lightMultiplier = 1;
-    
+
     theItem = generateItem(FOOD, RATION);
     theItem = addItemToPack(theItem);
-    
+
     theItem = generateItem(WEAPON, DAGGER);
     theItem->enchant1 = theItem->enchant2 = 0;
     theItem->flags &= ~(ITEM_CURSED | ITEM_RUNIC);
     identify(theItem);
     theItem = addItemToPack(theItem);
-    equipItem(theItem, false);
-    
+    equipItem(theItem, false, NULL);
+
     theItem = generateItem(WEAPON, DART);
     theItem->enchant1 = theItem->enchant2 = 0;
     theItem->quantity = 15;
     theItem->flags &= ~(ITEM_CURSED | ITEM_RUNIC);
     identify(theItem);
     theItem = addItemToPack(theItem);
-    
+
     theItem = generateItem(ARMOR, LEATHER_ARMOR);
     theItem->enchant1 = 0;
     theItem->flags &= ~(ITEM_CURSED | ITEM_RUNIC);
     identify(theItem);
     theItem = addItemToPack(theItem);
-    equipItem(theItem, false);
+    equipItem(theItem, false, NULL);
     player.status[STATUS_DONNING] = 0;
-    
+
     recalculateEquipmentBonuses();
-    
+
     DEBUG {
         theItem = generateItem(RING, RING_CLAIRVOYANCE);
         theItem->enchant1 = max(DROWS, DCOLS);
         theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
+        theItem = generateItem(RING, RING_AWARENESS);
+        theItem->enchant1 = 30;
+        theItem->flags &= ~ITEM_CURSED;
+        identify(theItem);
+        theItem = addItemToPack(theItem);
+
         theItem = generateItem(WEAPON, DAGGER);
         theItem->enchant1 = 50;
         theItem->enchant2 = W_QUIETUS;
@@ -463,7 +403,7 @@ void initializeRogue(unsigned long seed) {
         theItem->damage.lowerBound = theItem->damage.upperBound = 25;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(ARMOR, LEATHER_ARMOR);
         theItem->enchant1 = 50;
         theItem->enchant2 = A_REFLECTION;
@@ -471,109 +411,64 @@ void initializeRogue(unsigned long seed) {
         theItem->flags |= (ITEM_PROTECTED | ITEM_RUNIC);
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(STAFF, STAFF_FIRE);
         theItem->enchant1 = 10;
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(STAFF, STAFF_LIGHTNING);
         theItem->enchant1 = 10;
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(STAFF, STAFF_BLINKING);
-        theItem->enchant1 = theItem->charges = 10;
-        theItem->flags &= ~ITEM_CURSED;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(STAFF, STAFF_TUNNELING);
         theItem->enchant1 = 10;
         theItem->charges = 3000;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(STAFF, STAFF_OBSTRUCTION);
         theItem->enchant1 = 10;
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(WAND, WAND_BECKONING);
-        theItem->charges = 3000;
-        theItem->flags &= ~ITEM_CURSED;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(STAFF, STAFF_ENTRANCEMENT);
         theItem->enchant1 = 10;
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(STAFF, STAFF_HEALING);
-        theItem->enchant1 = 10;
-        theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
+
+        theItem = generateItem(WAND, WAND_BECKONING);
+        theItem->charges = 3000;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(STAFF, STAFF_CONJURATION);
-        theItem->enchant1 = 10;
-        theItem->charges = 300;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(STAFF, STAFF_POISON);
-        theItem->enchant1 = 10;
-        theItem->charges = 300;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(WAND, WAND_DOMINATION);
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(WAND, WAND_POLYMORPH);
-        theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(WAND, WAND_PLENTY);
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
+
         theItem = generateItem(WAND, WAND_NEGATION);
         theItem->charges = 300;
-        theItem->flags &= ~ITEM_CURSED;
         identify(theItem);
         theItem = addItemToPack(theItem);
-        
-        theItem = generateItem(RING, RING_AWARENESS);
-        theItem->enchant1 = 30;
-        theItem->flags &= ~ITEM_CURSED;
-        identify(theItem);
-        theItem = addItemToPack(theItem);
-        
+
 //      short i;
 //      for (i=0; i < NUMBER_CHARM_KINDS && i < 4; i++) {
 //          theItem = generateItem(CHARM, i);
 //          theItem = addItemToPack(theItem);
 //      }
     }
+    clearMessageArchive();
     blackOutScreen();
     welcome();
 }
@@ -581,7 +476,7 @@ void initializeRogue(unsigned long seed) {
 // call this once per level to set all the dynamic colors as a function of depth
 void updateColors() {
     short i;
-    
+
     for (i=0; i<NUMBER_DYNAMIC_COLORS; i++) {
         *(dynamicColors[i][0]) = *(dynamicColors[i][1]);
         applyColorAverage(dynamicColors[i][0], dynamicColors[i][2], min(100, max(0, rogue.depthLevel * 100 / AMULET_LEVEL)));
@@ -589,45 +484,42 @@ void updateColors() {
 }
 
 void startLevel(short oldLevelNumber, short stairDirection) {
-    unsigned long oldSeed;
+    uint64_t oldSeed;
     item *theItem;
-    short loc[2], i, j, x, y, px, py, flying, dir;
+    short i, j, x, y, px, py, flying, dir;
     boolean placedPlayer;
-    creature *monst;
     enum dungeonLayers layer;
     unsigned long timeAway;
     short **mapToStairs;
     short **mapToPit;
     boolean connectingStairsDiscovered;
-    
+
     if (oldLevelNumber == DEEPEST_LEVEL && stairDirection != -1) {
         return;
     }
-    
+
     synchronizePlayerTimeState();
-    
+
     rogue.updatedSafetyMapThisTurn          = false;
     rogue.updatedAllySafetyMapThisTurn      = false;
     rogue.updatedMapToSafeTerrainThisTurn   = false;
-    
-    rogue.cursorLoc[0] = -1;
-    rogue.cursorLoc[1] = -1;
+
+    rogue.cursorLoc = (pos) { .x = -1, .y = -1 };
     rogue.lastTarget = NULL;
-    
-    connectingStairsDiscovered = (pmap[rogue.downLoc[0]][rogue.downLoc[1]].flags & (DISCOVERED | MAGIC_MAPPED) ? true : false);
+
+    connectingStairsDiscovered = (pmap[rogue.downLoc.x][rogue.downLoc.y].flags & (DISCOVERED | MAGIC_MAPPED) ? true : false);
     if (stairDirection == 0) { // fallen
-        levels[oldLevelNumber-1].playerExitedVia[0] = player.xLoc;
-        levels[oldLevelNumber-1].playerExitedVia[1] = player.yLoc;
+        levels[oldLevelNumber-1].playerExitedVia = (pos){ .x = player.loc.x, .y = player.loc.y };
     }
-    
+
     if (oldLevelNumber != rogue.depthLevel) {
-        px = player.xLoc;
-        py = player.yLoc;
-        if (cellHasTerrainFlag(player.xLoc, player.yLoc, T_AUTO_DESCENT)) {
+        px = player.loc.x;
+        py = player.loc.y;
+        if (cellHasTerrainFlag(player.loc.x, player.loc.y, T_AUTO_DESCENT)) {
             for (i=0; i<8; i++) {
-                if (!cellHasTerrainFlag(player.xLoc+nbDirs[i][0], player.yLoc+nbDirs[i][1], (T_PATHING_BLOCKER))) {
-                    px = player.xLoc+nbDirs[i][0];
-                    py = player.yLoc+nbDirs[i][1];
+                if (!cellHasTerrainFlag(player.loc.x+nbDirs[i][0], player.loc.y+nbDirs[i][1], (T_PATHING_BLOCKER))) {
+                    px = player.loc.x+nbDirs[i][0];
+                    py = player.loc.y+nbDirs[i][1];
                     break;
                 }
             }
@@ -637,9 +529,10 @@ void startLevel(short oldLevelNumber, short stairDirection) {
         for (flying = 0; flying <= 1; flying++) {
             fillGrid(mapToStairs, 0);
             calculateDistances(mapToStairs, px, py, (flying ? T_OBSTRUCTS_PASSABILITY : T_PATHING_BLOCKER) | T_SACRED, NULL, true, true);
-            for (monst = monsters->nextCreature; monst != NULL; monst = monst->nextCreature) {
-                x = monst->xLoc;
-                y = monst->yLoc;
+            for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+                creature *monst = nextCreature(&it);
+                x = monst->loc.x;
+                y = monst->loc.y;
                 if (((monst->creatureState == MONSTER_TRACKING_SCENT && (stairDirection != 0 || monst->status[STATUS_LEVITATING]))
                      || monst->creatureState == MONSTER_ALLY || monst == rogue.yendorWarden)
                     && (stairDirection != 0 || monst->currentHP > 10 || monst->status[STATUS_LEVITATING])
@@ -651,9 +544,9 @@ void startLevel(short oldLevelNumber, short stairDirection) {
                     && !(cellHasTerrainFlag(x, y, T_OBSTRUCTS_PASSABILITY))
                     && !monst->status[STATUS_ENTRANCED]
                     && !monst->status[STATUS_PARALYZED]
-                    && (mapToStairs[monst->xLoc][monst->yLoc] < 30000 || monst->creatureState == MONSTER_ALLY || monst == rogue.yendorWarden)) {
-                    
-                    monst->status[STATUS_ENTERS_LEVEL_IN] = clamp(mapToStairs[monst->xLoc][monst->yLoc] * monst->movementSpeed / 100 + 1, 1, 150);
+                    && (mapToStairs[monst->loc.x][monst->loc.y] < 30000 || monst->creatureState == MONSTER_ALLY || monst == rogue.yendorWarden)) {
+
+                    monst->status[STATUS_ENTERS_LEVEL_IN] = clamp(mapToStairs[monst->loc.x][monst->loc.y] * monst->movementSpeed / 100 + 1, 1, 150);
                     switch (stairDirection) {
                         case 1:
                             monst->bookkeepingFlags |= MB_APPROACHING_DOWNSTAIRS;
@@ -672,24 +565,19 @@ void startLevel(short oldLevelNumber, short stairDirection) {
         }
         freeGrid(mapToStairs);
     }
-    
-    for (monst = monsters->nextCreature; monst != NULL; monst = monst->nextCreature) {
+
+    for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+        creature *monst = nextCreature(&it);
         if (monst->mapToMe) {
             freeGrid(monst->mapToMe);
             monst->mapToMe = NULL;
         }
-        if (monst->safetyMap) {
-            freeGrid(monst->safetyMap);
-            monst->safetyMap = NULL;
-        }
     }
-    levels[oldLevelNumber-1].monsters = monsters->nextCreature;
-    levels[oldLevelNumber-1].dormantMonsters = dormantMonsters->nextCreature;
     levels[oldLevelNumber-1].items = floorItems->nextItem;
-    
+
     for (i=0; i<DCOLS; i++) {
         for (j=0; j<DROWS; j++) {
-            if (pmap[i][j].flags & VISIBLE) {
+            if (pmap[i][j].flags & ANY_KIND_OF_VISIBLE) {
                 // Remember visible cells upon exiting.
                 storeMemories(i, j);
             }
@@ -698,65 +586,73 @@ void startLevel(short oldLevelNumber, short stairDirection) {
             }
             levels[oldLevelNumber - 1].mapStorage[i][j].volume = pmap[i][j].volume;
             levels[oldLevelNumber - 1].mapStorage[i][j].flags = (pmap[i][j].flags & PERMANENT_TILE_FLAGS);
+            levels[oldLevelNumber - 1].mapStorage[i][j].machineNumber = pmap[i][j].machineNumber;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedAppearance = pmap[i][j].rememberedAppearance;
-            levels[oldLevelNumber - 1].mapStorage[i][j].rememberedTerrain = pmap[i][j].rememberedTerrain;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedItemCategory = pmap[i][j].rememberedItemCategory;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedItemKind = pmap[i][j].rememberedItemKind;
+            levels[oldLevelNumber - 1].mapStorage[i][j].rememberedItemQuantity = pmap[i][j].rememberedItemQuantity;
+            levels[oldLevelNumber - 1].mapStorage[i][j].rememberedItemOriginDepth = pmap[i][j].rememberedItemOriginDepth;
+            levels[oldLevelNumber - 1].mapStorage[i][j].rememberedTerrain = pmap[i][j].rememberedTerrain;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedCellFlags = pmap[i][j].rememberedCellFlags;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedTerrainFlags = pmap[i][j].rememberedTerrainFlags;
             levels[oldLevelNumber - 1].mapStorage[i][j].rememberedTMFlags = pmap[i][j].rememberedTMFlags;
-            levels[oldLevelNumber - 1].mapStorage[i][j].machineNumber = pmap[i][j].machineNumber;
         }
     }
-    
+
     levels[oldLevelNumber - 1].awaySince = rogue.absoluteTurnNumber;
-    
+
     //  Prepare the new level
-    
-    rogue.minersLightRadius = 2.25 + (DCOLS - 1) * (float) pow(0.85, rogue.depthLevel);
+    rogue.minersLightRadius = (DCOLS - 1) * FP_FACTOR;
+    for (i = 0; i < rogue.depthLevel; i++) {
+        rogue.minersLightRadius = rogue.minersLightRadius * 85 / 100;
+    }
+    rogue.minersLightRadius += FP_FACTOR * 225 / 100;
     updateColors();
     updateRingBonuses(); // also updates miner's light
-    
+
     if (!levels[rogue.depthLevel - 1].visited) { // level has not already been visited
         levels[rogue.depthLevel - 1].scentMap = allocGrid();
         scentMap = levels[rogue.depthLevel - 1].scentMap;
         fillGrid(levels[rogue.depthLevel - 1].scentMap, 0);
+
+        // generate a seed from the current RNG state
+        do {
+            oldSeed = rand_64bits();
+        } while (oldSeed == 0);
+
         // generate new level
-        oldSeed = (unsigned long) rand_range(0, 9999);
-        oldSeed += (unsigned long) 10000 * rand_range(0, 9999);
         seedRandomGenerator(levels[rogue.depthLevel - 1].levelSeed);
-        
+
         // Load up next level's monsters and items, since one might have fallen from above.
-        monsters->nextCreature          = levels[rogue.depthLevel-1].monsters;
-        dormantMonsters->nextCreature   = levels[rogue.depthLevel-1].dormantMonsters;
-        floorItems->nextItem            = levels[rogue.depthLevel-1].items;
-        
-        levels[rogue.depthLevel-1].monsters = NULL;
-        levels[rogue.depthLevel-1].dormantMonsters = NULL;
+        monsters             = &levels[rogue.depthLevel-1].monsters;
+        dormantMonsters      = &levels[rogue.depthLevel-1].dormantMonsters;
+        floorItems->nextItem = levels[rogue.depthLevel-1].items;
+
         levels[rogue.depthLevel-1].items = NULL;
-        
+
         digDungeon();
         initializeLevel();
         setUpWaypoints();
-        
+
         shuffleTerrainColors(100, false);
-        
+
         // If we somehow failed to generate the amulet altar,
         // just toss an amulet in there somewhere.
         // It'll be fiiine!
         if (rogue.depthLevel == AMULET_LEVEL
             && !numberOfMatchingPackItems(AMULET, 0, 0, false)
             && levels[rogue.depthLevel-1].visited == false) {
-            
+
             for (theItem = floorItems->nextItem; theItem != NULL; theItem = theItem->nextItem) {
                 if (theItem->category & AMULET) {
                     break;
                 }
             }
-            for (monst = monsters->nextCreature; monst != NULL; monst = monst->nextCreature) {
+            for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+                creature *monst = nextCreature(&it);
                 if (monst->carriedItem
                     && (monst->carriedItem->category & AMULET)) {
-                    
+
                     theItem = monst->carriedItem;
                     break;
                 }
@@ -765,19 +661,21 @@ void startLevel(short oldLevelNumber, short stairDirection) {
                 placeItem(generateItem(AMULET, 0), 0, 0);
             }
         }
+
+        // re-seed the RNG
         seedRandomGenerator(oldSeed);
-        
+
         //logLevel();
-        
+
         // Simulate 50 turns so the level is broken in (swamp gas accumulating, brimstone percolating, etc.).
         timeAway = 50;
-        
+
     } else { // level has already been visited
-        
+
         // restore level
         scentMap = levels[rogue.depthLevel - 1].scentMap;
         timeAway = clamp(0, rogue.absoluteTurnNumber - levels[rogue.depthLevel - 1].awaySince, 30000);
-        
+
         for (i=0; i<DCOLS; i++) {
             for (j=0; j<DROWS; j++) {
                 for (layer = 0; layer < NUMBER_TERRAIN_LAYERS; layer++) {
@@ -785,135 +683,161 @@ void startLevel(short oldLevelNumber, short stairDirection) {
                 }
                 pmap[i][j].volume = levels[rogue.depthLevel - 1].mapStorage[i][j].volume;
                 pmap[i][j].flags = (levels[rogue.depthLevel - 1].mapStorage[i][j].flags & PERMANENT_TILE_FLAGS);
+                pmap[i][j].machineNumber = levels[rogue.depthLevel - 1].mapStorage[i][j].machineNumber;
                 pmap[i][j].rememberedAppearance = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedAppearance;
-                pmap[i][j].rememberedTerrain = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedTerrain;
                 pmap[i][j].rememberedItemCategory = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedItemCategory;
                 pmap[i][j].rememberedItemKind = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedItemKind;
+                pmap[i][j].rememberedItemQuantity = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedItemQuantity;
+                pmap[i][j].rememberedItemOriginDepth = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedItemOriginDepth;
+                pmap[i][j].rememberedTerrain = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedTerrain;
                 pmap[i][j].rememberedCellFlags = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedCellFlags;
                 pmap[i][j].rememberedTerrainFlags = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedTerrainFlags;
-                pmap[i][j].machineNumber = levels[rogue.depthLevel - 1].mapStorage[i][j].machineNumber;
+                pmap[i][j].rememberedTMFlags = levels[rogue.depthLevel - 1].mapStorage[i][j].rememberedTMFlags;
             }
         }
-        
+
         setUpWaypoints();
-        
-        rogue.downLoc[0]    = levels[rogue.depthLevel - 1].downStairsLoc[0];
-        rogue.downLoc[1]    = levels[rogue.depthLevel - 1].downStairsLoc[1];
-        rogue.upLoc[0]      = levels[rogue.depthLevel - 1].upStairsLoc[0];
-        rogue.upLoc[1]      = levels[rogue.depthLevel - 1].upStairsLoc[1];
-        
-        monsters->nextCreature = levels[rogue.depthLevel - 1].monsters;
-        dormantMonsters->nextCreature = levels[rogue.depthLevel - 1].dormantMonsters;
+
+        rogue.downLoc = levels[rogue.depthLevel - 1].downStairsLoc;
+        rogue.upLoc   = levels[rogue.depthLevel - 1].upStairsLoc;
+
+        monsters             = &levels[rogue.depthLevel - 1].monsters;
+        dormantMonsters      = &levels[rogue.depthLevel - 1].dormantMonsters;
         floorItems->nextItem = levels[rogue.depthLevel - 1].items;
-        
-        levels[rogue.depthLevel-1].monsters = NULL;
-        levels[rogue.depthLevel-1].dormantMonsters = NULL;
-        levels[rogue.depthLevel-1].items = NULL;
-        
+
+        levels[rogue.depthLevel-1].items           = NULL;
+
         for (theItem = floorItems->nextItem; theItem != NULL; theItem = theItem->nextItem) {
             restoreItem(theItem);
         }
-        
-        mapToStairs = allocGrid();
-        mapToPit = allocGrid();
-        fillGrid(mapToStairs, 0);
-        fillGrid(mapToPit, 0);
-        calculateDistances(mapToStairs, player.xLoc, player.yLoc, T_PATHING_BLOCKER, NULL, true, true);
-        calculateDistances(mapToPit, levels[rogue.depthLevel-1].playerExitedVia[0],
-                           levels[rogue.depthLevel-1].playerExitedVia[0], T_PATHING_BLOCKER, NULL, true, true);
-        for (monst = monsters->nextCreature; monst != NULL; monst = monst->nextCreature) {
-            restoreMonster(monst, mapToStairs, mapToPit);
-        }
-        freeGrid(mapToStairs);
-        freeGrid(mapToPit);
+
     }
-    
+
     // Simulate the environment!
     // First bury the player in limbo while we run the simulation,
     // so that any harmful terrain doesn't affect her during the process.
-    px = player.xLoc;
-    py = player.yLoc;
-    player.xLoc = player.yLoc = 0;
-    for (i = 0; i < 100 && i < (short) timeAway; i++) {
+    px = player.loc.x;
+    py = player.loc.y;
+    player.loc.x = player.loc.y = 0;
+    unsigned long currentTurnNumber = rogue.absoluteTurnNumber;
+    timeAway = min(timeAway, 100);
+    while (timeAway--) {
+        rogue.absoluteTurnNumber = max(currentTurnNumber, timeAway) - timeAway;
         updateEnvironment();
     }
-    player.xLoc = px;
-    player.yLoc = py;
-    
+    rogue.absoluteTurnNumber = currentTurnNumber;
+    player.loc.x = px;
+    player.loc.y = py;
+
+    // This level is now up-to-date as of the current turn.
+    // Get the ticker ready for the *next* environment update.
+    if (rogue.ticksTillUpdateEnvironment <= 0) {
+        rogue.ticksTillUpdateEnvironment += 100;
+    }
+
     if (!levels[rogue.depthLevel-1].visited) {
         levels[rogue.depthLevel-1].visited = true;
         if (rogue.depthLevel == AMULET_LEVEL) {
-            messageWithColor("An alien energy permeates the area. The Amulet of Yendor must be nearby!", &itemMessageColor, false);
+            messageWithColor("An alien energy permeates the area. The Amulet of Yendor must be nearby!", &itemMessageColor, 0);
         } else if (rogue.depthLevel == DEEPEST_LEVEL) {
-            messageWithColor("An overwhelming sense of peace and tranquility settles upon you.", &lightBlue, false);
+            messageWithColor("An overwhelming sense of peace and tranquility settles upon you.", &lightBlue, 0);
         }
     }
-    
+
     // Position the player.
+    pos loc;
     if (stairDirection == 0) { // fell into the level
-        
-        getQualifyingLocNear(loc, player.xLoc, player.yLoc, true, 0,
-                             (T_PATHING_BLOCKER),
-                             (HAS_MONSTER | HAS_ITEM | HAS_UP_STAIRS | HAS_DOWN_STAIRS | IS_IN_MACHINE), false, false);
+        getQualifyingLocNear(&loc, player.loc.x, player.loc.y, true, 0,
+                             (T_PATHING_BLOCKER & ~T_IS_DEEP_WATER),
+                             (HAS_MONSTER | HAS_ITEM | HAS_STAIRS | IS_IN_MACHINE), false, false);
+
+        if (cellHasTerrainFlag(loc.x, loc.y, T_IS_DEEP_WATER)) {
+            // Fell into deep water... can we swim out of it?
+            pos dryLoc;
+            getQualifyingLocNear(&dryLoc, player.loc.x, player.loc.y, true, 0,
+                                (T_PATHING_BLOCKER),
+                                (HAS_MONSTER | HAS_ITEM | HAS_STAIRS | IS_IN_MACHINE), false, false);
+
+            short swimDistance = pathingDistance(loc.x, loc.y, dryLoc.x, dryLoc.y, T_PATHING_BLOCKER & ~T_IS_DEEP_WATER);
+            if (swimDistance == 30000) {
+                // Cannot swim out! This is an enclosed lake.
+                loc = dryLoc;
+            }
+        }
+
     } else {
         if (stairDirection == 1) { // heading downward
-            player.xLoc = rogue.upLoc[0];
-            player.yLoc = rogue.upLoc[1];
+            player.loc = rogue.upLoc;
         } else if (stairDirection == -1) { // heading upward
-            player.xLoc = rogue.downLoc[0];
-            player.yLoc = rogue.downLoc[1];
+            player.loc = rogue.downLoc;
         }
-        
+
         placedPlayer = false;
         for (dir=0; dir<4 && !placedPlayer; dir++) {
-            loc[0] = player.xLoc + nbDirs[dir][0];
-            loc[1] = player.yLoc + nbDirs[dir][1];
-            if (!cellHasTerrainFlag(loc[0], loc[1], T_PATHING_BLOCKER)
-                && !(pmap[loc[0]][loc[1]].flags & (HAS_MONSTER | HAS_ITEM | HAS_UP_STAIRS | HAS_DOWN_STAIRS | IS_IN_MACHINE))) {
+            loc.x = player.loc.x + nbDirs[dir][0];
+            loc.y = player.loc.y + nbDirs[dir][1];
+            if (!cellHasTerrainFlag(loc.x, loc.y, T_PATHING_BLOCKER)
+                && !(pmap[loc.x][loc.y].flags & (HAS_MONSTER | HAS_ITEM | HAS_STAIRS | IS_IN_MACHINE))) {
                 placedPlayer = true;
             }
         }
         if (!placedPlayer) {
-            getQualifyingPathLocNear(&loc[0], &loc[1],
-                                     player.xLoc, player.yLoc,
+            getQualifyingPathLocNear(&loc.x, &loc.y,
+                                     player.loc.x, player.loc.y,
                                      true,
-                                     T_DIVIDES_LEVEL, NULL,
-                                     T_PATHING_BLOCKER, (HAS_MONSTER | HAS_ITEM | HAS_UP_STAIRS | HAS_DOWN_STAIRS | IS_IN_MACHINE),
+                                     T_DIVIDES_LEVEL, 0,
+                                     T_PATHING_BLOCKER, (HAS_MONSTER | HAS_ITEM | HAS_STAIRS | IS_IN_MACHINE),
                                      false);
         }
     }
-    player.xLoc = loc[0];
-    player.yLoc = loc[1];
-        
-    pmap[player.xLoc][player.yLoc].flags |= HAS_PLAYER;
-    
+    player.loc = loc;
+
+    pmap[player.loc.x][player.loc.y].flags |= HAS_PLAYER;
+
     if (connectingStairsDiscovered) {
-        for (i = rogue.upLoc[0]-1; i <= rogue.upLoc[0] + 1; i++) {
-            for (j = rogue.upLoc[1]-1; j <= rogue.upLoc[1] + 1; j++) {
+        for (i = rogue.upLoc.x-1; i <= rogue.upLoc.x + 1; i++) {
+            for (j = rogue.upLoc.y-1; j <= rogue.upLoc.y + 1; j++) {
                 if (coordinatesAreInMap(i, j)) {
                     discoverCell(i, j);
                 }
             }
         }
     }
-    if (cellHasTerrainFlag(player.xLoc, player.yLoc, T_IS_DEEP_WATER) && !player.status[STATUS_LEVITATING]
-        && !cellHasTerrainFlag(player.xLoc, player.yLoc, (T_ENTANGLES | T_OBSTRUCTS_PASSABILITY))) {
+    if (cellHasTerrainFlag(player.loc.x, player.loc.y, T_IS_DEEP_WATER) && !player.status[STATUS_LEVITATING]
+        && !cellHasTerrainFlag(player.loc.x, player.loc.y, (T_ENTANGLES | T_OBSTRUCTS_PASSABILITY))) {
         rogue.inWater = true;
     }
-    
+
+    if (levels[rogue.depthLevel - 1].visited) {
+        mapToStairs = allocGrid();
+        mapToPit = allocGrid();
+        fillGrid(mapToStairs, 0);
+        fillGrid(mapToPit, 0);
+        calculateDistances(mapToStairs, player.loc.x, player.loc.y, T_PATHING_BLOCKER, NULL, true, true);
+        calculateDistances(mapToPit, levels[rogue.depthLevel-1].playerExitedVia.x,
+                           levels[rogue.depthLevel-1].playerExitedVia.y, T_PATHING_BLOCKER, NULL, true, true);
+        for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+            creature *monst = nextCreature(&it);
+            restoreMonster(monst, mapToStairs, mapToPit);
+        }
+        freeGrid(mapToStairs);
+        freeGrid(mapToPit);
+    }
+
     updateMapToShore();
     updateVision(true);
-    rogue.aggroRange = currentAggroValue();
-    
+    rogue.stealthRange = currentStealthRange();
+
     // update monster states so none are hunting if there is no scent and they can't see the player
-    for (monst = monsters->nextCreature; monst != NULL; monst = monst->nextCreature) {
+    for (creatureIterator it = iterateCreatures(monsters); hasNextCreature(it);) {
+        creature *monst = nextCreature(&it);
         updateMonsterState(monst);
     }
-    
+
     rogue.playbackBetweenTurns = true;
     displayLevel();
     refreshSideBar(-1, -1, false);
-    
+
     if (rogue.playerTurnNumber) {
         rogue.playerTurnNumber++; // Increment even though no time has passed.
     }
@@ -944,41 +868,55 @@ void freeCreature(creature *monst) {
     free(monst);
 }
 
-void emptyGraveyard() {
-    creature *monst, *monst2;
-    for (monst = graveyard->nextCreature; monst != NULL; monst = monst2) {
-        monst2 = monst->nextCreature;
-        freeCreature(monst);
+static void removeDeadMonstersFromList(creatureList *list) {
+    // This needs to be able to access creatures that are dying, but `creatureIterator` skips
+    // dying monsters so it can't be used here.
+    creatureListNode *next = list->head;
+    while (next != NULL) {
+        creature *decedent = next->creature;
+        next = next->nextCreature;
+        if (decedent->bookkeepingFlags & MB_HAS_DIED) {
+            removeCreature(list, decedent);
+            if (decedent->leader == &player
+                && !(decedent->info.flags & MONST_INANIMATE)
+                && (decedent->bookkeepingFlags & MB_HAS_SOUL)
+                && !(decedent->bookkeepingFlags & MB_ADMINISTRATIVE_DEATH)) {
+
+                // Unset flag, since the purgatory list should be iterable.
+                decedent->bookkeepingFlags &= ~MB_HAS_DIED;
+                prependCreature(&purgatory, decedent);
+            } else {
+                freeCreature(decedent);
+            }
+        }
     }
-    graveyard->nextCreature = NULL;
+}
+
+// Removes dead monsters from `monsters`/`dormantMonsters`, and inserts them into `purgatory` if
+// the decedent is a player ally at the moment of death, for possible future resurrection.
+void removeDeadMonsters() {
+    removeDeadMonstersFromList(monsters);
+    removeDeadMonstersFromList(dormantMonsters);
 }
 
 void freeEverything() {
     short i;
-    creature *monst, *monst2;
     item *theItem, *theItem2;
-    
+
 #ifdef AUDIT_RNG
     fclose(RNGLogFile);
 #endif
-    
+
     freeGlobalDynamicGrid(&safetyMap);
     freeGlobalDynamicGrid(&allySafetyMap);
     freeGlobalDynamicGrid(&chokeMap);
     freeGlobalDynamicGrid(&rogue.mapToShore);
     freeGlobalDynamicGrid(&rogue.mapToSafeTerrain);
-    
+
     for (i=0; i<DEEPEST_LEVEL+1; i++) {
-        for (monst = levels[i].monsters; monst != NULL; monst = monst2) {
-            monst2 = monst->nextCreature;
-            freeCreature(monst);
-        }
-        levels[i].monsters = NULL;
-        for (monst = levels[i].dormantMonsters; monst != NULL; monst = monst2) {
-            monst2 = monst->nextCreature;
-            freeCreature(monst);
-        }
-        levels[i].dormantMonsters = NULL;
+        freeCreatureList(&levels[i].monsters);
+        freeCreatureList(&levels[i].dormantMonsters);
+
         for (theItem = levels[i].items; theItem != NULL; theItem = theItem2) {
             theItem2 = theItem->nextItem;
             deleteItem(theItem);
@@ -990,26 +928,8 @@ void freeEverything() {
         }
     }
     scentMap = NULL;
-    for (monst = monsters; monst != NULL; monst = monst2) {
-        monst2 = monst->nextCreature;
-        freeCreature(monst);
-    }
-    monsters = NULL;
-    for (monst = dormantMonsters; monst != NULL; monst = monst2) {
-        monst2 = monst->nextCreature;
-        freeCreature(monst);
-    }
-    dormantMonsters = NULL;
-    for (monst = graveyard; monst != NULL; monst = monst2) {
-        monst2 = monst->nextCreature;
-        freeCreature(monst);
-    }
-    graveyard = NULL;
-    for (monst = purgatory; monst != NULL; monst = monst2) {
-        monst2 = monst->nextCreature;
-        freeCreature(monst);
-    }
-    purgatory = NULL;
+    freeCreatureList(&purgatory);
+
     for (theItem = floorItems; theItem != NULL; theItem = theItem2) {
         theItem2 = theItem->nextItem;
         deleteItem(theItem);
@@ -1028,13 +948,13 @@ void freeEverything() {
     for (i=0; i<MAX_WAYPOINT_COUNT; i++) {
         freeGrid(rogue.wpDistance[i]);
     }
-    
+
     deleteAllFlares();
     if (rogue.flares) {
         free(rogue.flares);
         rogue.flares = NULL;
     }
-    
+
     free(levels);
     levels = NULL;
 }
@@ -1047,23 +967,29 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
     boolean playback;
     rogueEvent theEvent;
     item *theItem;
-    
+    char recordingFilename[BROGUE_FILENAME_MAX] = {0};
+
     if (player.bookkeepingFlags & MB_IS_DYING) {
         // we've already been through this once; let's avoid overkill.
         return;
-    } else {
-        player.bookkeepingFlags |= MB_IS_DYING;
     }
-    
+
+    player.bookkeepingFlags |= MB_IS_DYING;
     rogue.autoPlayingLevel = false;
+    rogue.gameInProgress = false;
     botControl = false;
     flushBufferToFile();
-    
+
+    if (rogue.playbackFastForward) {
+        rogue.playbackFastForward = false;
+        displayLevel();
+    }
+
     if (rogue.quit) {
         if (rogue.playbackMode) {
             playback = rogue.playbackMode;
             rogue.playbackMode = false;
-            message("(The player quit at this point.)", true);
+            message("(The player quit at this point.)", REQUIRE_ACKNOWLEDGMENT);
             rogue.playbackMode = playback;
         }
     } else {
@@ -1073,21 +999,22 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
         }
         strcpy(buf, "You die...");
         if (KEYBOARD_LABELS) {
-            encodeMessageColor(buf, strlen(buf), &veryDarkGray);
+            encodeMessageColor(buf, strlen(buf), &gray);
             strcat(buf, " (press 'i' to view your inventory)");
         }
         player.currentHP = 0; // So it shows up empty in the side bar.
         refreshSideBar(-1, -1, false);
-        messageWithColor(buf, &badMessageColor, false);
+        messageWithColor(buf, &badMessageColor, 0);
         displayMoreSignWithoutWaitingForAcknowledgment();
-        
+
         do {
+            if (rogue.playbackMode) break;
             nextBrogueEvent(&theEvent, false, false, false);
             if (theEvent.eventType == KEYSTROKE
                 && theEvent.param1 != ACKNOWLEDGE_KEY
                 && theEvent.param1 != ESCAPE_KEY
                 && theEvent.param1 != INVENTORY_KEY) {
-                
+
                 flashTemporaryAlert(" -- Press space or click to continue, or press 'i' to view inventory -- ", 1500);
             } else if (theEvent.eventType == KEYSTROKE && theEvent.param1 == INVENTORY_KEY) {
                 for (theItem = packItems->nextItem; theItem != NULL; theItem = theItem->nextItem) {
@@ -1098,36 +1025,37 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
             }
         } while (!(theEvent.eventType == KEYSTROKE && (theEvent.param1 == ACKNOWLEDGE_KEY || theEvent.param1 == ESCAPE_KEY)
                    || theEvent.eventType == MOUSE_UP));
-        
+
         confirmMessages();
-        
+
         rogue.playbackMode = playback;
     }
-    
+
     rogue.creaturesWillFlashThisTurn = false;
-    
+
     if (D_IMMORTAL && !rogue.quit) {
-        message("...but then you get better.", false);
+        message("...but then you get better.", 0);
         player.currentHP = player.info.maxHP;
         if (player.status[STATUS_NUTRITION] < 10) {
             player.status[STATUS_NUTRITION] = STOMACH_SIZE;
         }
         player.bookkeepingFlags &= ~MB_IS_DYING;
+        rogue.gameInProgress = true;
         return;
     }
-    
+
     if (rogue.highScoreSaved) {
         return;
     }
     rogue.highScoreSaved = true;
-    
+
     if (rogue.quit) {
         blackOutScreen();
     } else {
         copyDisplayBuffer(dbuf, displayBuffer);
-        funkyFade(dbuf, &black, 0, 30, mapToWindowX(player.xLoc), mapToWindowY(player.yLoc), false);
+        funkyFade(dbuf, &black, 0, 120, mapToWindowX(player.loc.x), mapToWindowY(player.loc.y), false);
     }
-    
+
     if (useCustomPhrasing) {
         sprintf(buf, "%s on depth %i", killedBy, rogue.depthLevel);
     } else {
@@ -1148,35 +1076,48 @@ void gameOver(char *killedBy, boolean useCustomPhrasing) {
     }
     strcat(buf, ".");
     strcat(highScoreText, ".");
-    
+
     strcpy(theEntry.description, highScoreText);
-    
+
     if (!rogue.quit) {
         printString(buf, (COLS - strLenWithoutEscapes(buf)) / 2, ROWS / 2, &gray, &black, 0);
-        
+
         y = ROWS / 2 + 3;
         for (i = 0; i < FEAT_COUNT; i++) {
             //printf("\nConduct %i (%s) is %s.", i, featTable[i].name, rogue.featRecord[i] ? "true" : "false");
             if (rogue.featRecord[i]
                 && !featTable[i].initialValue) {
-                
+
                 sprintf(buf, "%s: %s", featTable[i].name, featTable[i].description);
                 printString(buf, (COLS - strLenWithoutEscapes(buf)) / 2, y, &advancementMessageColor, &black, 0);
                 y++;
             }
         }
-        
+
         displayMoreSign();
     }
-    
-    if (!rogue.playbackMode) {
-        if (saveHighScore(theEntry)) {
+
+    if (serverMode) {
+        blackOutScreen();
+        saveRecordingNoPrompt(recordingFilename);
+    } else {
+        if (!rogue.playbackMode && saveHighScore(theEntry)) {
             printHighScores(true);
         }
         blackOutScreen();
-        saveRecording();
+        saveRecording(recordingFilename);
     }
-    
+
+    if (!rogue.playbackMode) {
+        if (!rogue.quit) {
+            notifyEvent(GAMEOVER_DEATH, theEntry.score, 0, theEntry.description, recordingFilename);
+        } else {
+            notifyEvent(GAMEOVER_QUIT, theEntry.score, 0, theEntry.description, recordingFilename);
+        }
+    } else {
+        notifyEvent(GAMEOVER_RECORDING, 0, 0, "recording ended", "none");
+    }
+
     rogue.gameHasEnded = true;
 }
 
@@ -1188,15 +1129,24 @@ void victory(boolean superVictory) {
     rogueHighScoresEntry theEntry;
     boolean qualified, isPlayback;
     cellDisplayBuffer dbuf[COLS][ROWS];
-    
+    char recordingFilename[BROGUE_FILENAME_MAX] = {0};
+
+    rogue.gameInProgress = false;
     botControl = false;
     flushBufferToFile();
-    
-    deleteMessages();
+
+    if (rogue.playbackFastForward) {
+        rogue.playbackFastForward = false;
+        displayLevel();
+    }
+
+    //
+    // First screen - Congratulations...
+    //
     if (superVictory) {
-        message(    "Light streams through the portal, and you are teleported out of the dungeon.", false);
+        message(    "Light streams through the portal, and you are teleported out of the dungeon.", 0);
         copyDisplayBuffer(dbuf, displayBuffer);
-        funkyFade(dbuf, &superVictoryColor, 0, 120, mapToWindowX(player.xLoc), mapToWindowY(player.yLoc), false);
+        funkyFade(dbuf, &superVictoryColor, 0, 240, mapToWindowX(player.loc.x), mapToWindowY(player.loc.y), false);
         displayMoreSign();
         printString("Congratulations; you have transcended the Dungeons of Doom!                 ", mapToWindowX(0), mapToWindowY(-1), &black, &white, 0);
         displayMoreSign();
@@ -1204,9 +1154,9 @@ void victory(boolean superVictory) {
         deleteMessages();
         strcpy(displayedMessage[0], "You retire in splendor, forever renowned for your remarkable triumph.     ");
     } else {
-        message(    "You are bathed in sunlight as you throw open the heavy doors.", false);
+        message(    "You are bathed in sunlight as you throw open the heavy doors.", 0);
         copyDisplayBuffer(dbuf, displayBuffer);
-        funkyFade(dbuf, &white, 0, 100, mapToWindowX(player.xLoc), mapToWindowY(player.yLoc), false);
+        funkyFade(dbuf, &white, 0, 240, mapToWindowX(player.loc.x), mapToWindowY(player.loc.y), false);
         displayMoreSign();
         printString("Congratulations; you have escaped from the Dungeons of Doom!     ", mapToWindowX(0), mapToWindowY(-1), &black, &white, 0);
         displayMoreSign();
@@ -1214,31 +1164,42 @@ void victory(boolean superVictory) {
         deleteMessages();
         strcpy(displayedMessage[0], "You sell your treasures and live out your days in fame and glory.");
     }
-    
+
+    //
+    // Second screen - Show inventory and item's value
+    //
     printString(displayedMessage[0], mapToWindowX(0), mapToWindowY(-1), &white, &black, dbuf);
-    
-    printString("Gold", mapToWindowX(2), mapToWindowY(1), &white, &black, dbuf);
+
+    plotCharToBuffer(G_GOLD, mapToWindowX(2), mapToWindowY(1), &yellow, &black, dbuf);
+    printString("Gold", mapToWindowX(4), mapToWindowY(1), &white, &black, dbuf);
     sprintf(buf, "%li", rogue.gold);
     printString(buf, mapToWindowX(60), mapToWindowY(1), &itemMessageColor, &black, dbuf);
     totalValue += rogue.gold;
-    
+
     for (i = 4, theItem = packItems->nextItem; theItem != NULL; theItem = theItem->nextItem) {
         if (theItem->category & GEM) {
             gemCount += theItem->quantity;
         }
         if (theItem->category == AMULET && superVictory) {
-            printString("The Birthright of Yendor", mapToWindowX(2), min(ROWS-1, i + 1), &itemMessageColor, &black, dbuf);
+            plotCharToBuffer(G_AMULET, mapToWindowX(2), min(ROWS-1, i + 1), &yellow, &black, dbuf);
+            printString("The Birthright of Yendor", mapToWindowX(4), min(ROWS-1, i + 1), &itemMessageColor, &black, dbuf);
             sprintf(buf, "%li", max(0, itemValue(theItem) * 2));
             printString(buf, mapToWindowX(60), min(ROWS-1, i + 1), &itemMessageColor, &black, dbuf);
             totalValue += max(0, itemValue(theItem) * 2);
             i++;
-        } else if (theItem->category & COUNTS_TOWARD_SCORE) {
+        } else {
             identify(theItem);
             itemName(theItem, buf, true, true, &white);
             upperCase(buf);
-            printString(buf, mapToWindowX(2), min(ROWS-1, i + 1), &white, &black, dbuf);
-            sprintf(buf, "%li", max(0, itemValue(theItem)));
-            printString(buf, mapToWindowX(60), min(ROWS-1, i + 1), &itemMessageColor, &black, dbuf);
+
+            plotCharToBuffer(theItem->displayChar, mapToWindowX(2), min(ROWS-1, i + 1), &yellow, &black, dbuf);
+            printString(buf, mapToWindowX(4), min(ROWS-1, i + 1), &white, &black, dbuf);
+
+            if (itemValue(theItem) > 0) {
+                sprintf(buf, "%li", max(0, itemValue(theItem)));
+                printString(buf, mapToWindowX(60), min(ROWS-1, i + 1), &itemMessageColor, &black, dbuf);
+            }
+
             totalValue += max(0, itemValue(theItem));
             i++;
         }
@@ -1247,18 +1208,27 @@ void victory(boolean superVictory) {
     printString("TOTAL:", mapToWindowX(2), min(ROWS-1, i + 1), &lightBlue, &black, dbuf);
     sprintf(buf, "%li", totalValue);
     printString(buf, mapToWindowX(60), min(ROWS-1, i + 1), &lightBlue, &black, dbuf);
-    
-    i += 4;
+
+    funkyFade(dbuf, &white, 0, 120, COLS/2, ROWS/2, true);
+    displayMoreSign();
+
+    //
+    // Third screen - List of achievements with recording save prompt
+    //
+    blackOutScreen();
+
+    i = 4;
+    printString("Achievements", mapToWindowX(2), i++, &lightBlue, &black, NULL);
+
+    i++;
     for (j = 0; i < ROWS && j < FEAT_COUNT; j++) {
         if (rogue.featRecord[j]) {
             sprintf(buf, "%s: %s", featTable[j].name, featTable[j].description);
-            printString(buf, mapToWindowX(2), i, &advancementMessageColor, &black, dbuf);
+            printString(buf, mapToWindowX(2), i, &advancementMessageColor, &black, NULL);
             i++;
         }
     }
-    
-    funkyFade(dbuf, &white, 0, 15, COLS/2, ROWS/2, true);
-    
+
     strcpy(victoryVerb, superVictory ? "Mastered" : "Escaped");
     if (gemCount == 0) {
         sprintf(theEntry.description, "%s the Dungeons of Doom!", victoryVerb);
@@ -1267,49 +1237,63 @@ void victory(boolean superVictory) {
     } else {
         sprintf(theEntry.description, "%s the Dungeons of Doom with %i lumenstones!", victoryVerb, gemCount);
     }
-    
+
     theEntry.score = totalValue;
-    
+
     if (rogue.easyMode) {
         theEntry.score /= 10;
     }
-    
-    if (!DEBUGGING && !rogue.playbackMode) {
+
+    if (!rogue.wizard && !rogue.playbackMode) {
         qualified = saveHighScore(theEntry);
     } else {
         qualified = false;
     }
-    
+
     isPlayback = rogue.playbackMode;
     rogue.playbackMode = false;
-    displayMoreSign();
     rogue.playbackMode = isPlayback;
-    
-    saveRecording();
-    
-    printHighScores(qualified);
-    
+
+    if (serverMode) {
+        // There's no save recording prompt, so let the player see achievements.
+        displayMoreSign();
+        saveRecordingNoPrompt(recordingFilename);
+    } else {
+        saveRecording(recordingFilename);
+        printHighScores(qualified);
+    }
+
+    if (!rogue.playbackMode) {
+        if (superVictory) {
+            notifyEvent(GAMEOVER_SUPERVICTORY, theEntry.score, 0, theEntry.description, recordingFilename);
+        } else {
+            notifyEvent(GAMEOVER_VICTORY, theEntry.score, 0, theEntry.description, recordingFilename);
+        }
+    } else {
+        notifyEvent(GAMEOVER_RECORDING, 0, 0, "recording ended", "none");
+    }
+
     rogue.gameHasEnded = true;
 }
 
 void enableEasyMode() {
     if (rogue.easyMode) {
-        message("Alas, all hope of salvation is lost. You shed scalding tears at your plight.", false);
+        message("Alas, all hope of salvation is lost. You shed scalding tears at your plight.", 0);
         return;
     }
-    message("A dark presence surrounds you, whispering promises of stolen power.", true);
+    message("A dark presence surrounds you, whispering promises of stolen power.", REQUIRE_ACKNOWLEDGMENT);
     if (confirm("Succumb to demonic temptation (i.e. enable Easy Mode)?", false)) {
         recordKeystroke(EASY_MODE_KEY, false, true);
-        message("An ancient and terrible evil burrows into your willing flesh!", true);
+        message("An ancient and terrible evil burrows into your willing flesh!", REQUIRE_ACKNOWLEDGMENT);
         player.info.displayChar = '&';
         rogue.easyMode = true;
-        refreshDungeonCell(player.xLoc, player.yLoc);
+        refreshDungeonCell(player.loc.x, player.loc.y);
         refreshSideBar(-1, -1, false);
-        message("Wracked by spasms, your body contorts into an ALL-POWERFUL AMPERSAND!!!", false);
-        message("You have a feeling that you will take 20% as much damage from now on.", false);
-        message("But great power comes at a great price -- specifically, a 90% income tax rate.", false);
+        message("Wracked by spasms, your body contorts into an ALL-POWERFUL AMPERSAND!!!", 0);
+        message("You have a feeling that you will take 20% as much damage from now on.", 0);
+        message("But great power comes at a great price -- specifically, a 90% income tax rate.", 0);
     } else {
-        message("The evil dissipates, hissing, from the air around you.", false);
+        message("The evil dissipates, hissing, from the air around you.", 0);
     }
 }
 

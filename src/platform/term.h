@@ -3,7 +3,7 @@
 #define _term_h_
 
 #define TERM_NONE 0
-#define TERM_MOUSE 1
+#define TERM_MOUSE 100000
 
 typedef struct {float r, g, b;} fcolor;
 struct term_t {
@@ -12,16 +12,17 @@ struct term_t {
     void (*put)(int x, int y, int ch, fcolor *fg, fcolor *bg);
     void (*refresh)();
     int (*getkey)();
-    void (*wait)();
+    void (*wait)(int ms);
     int (*hasKey)();
     void (*title)(const char *);
     void (*resize)(int w, int h);
     int (*keycodeByName)(const char *);
+    int (*ctrlPressed)(int* key);
 
     struct {
         int up, down, left, right, backspace, del, quit;
     } keys;
-    
+
     int width, height;
     struct {
         int x, y;
